@@ -7,3 +7,4 @@ dependencies:
   - python
   - numpy
   - scipy
+  - pulp
