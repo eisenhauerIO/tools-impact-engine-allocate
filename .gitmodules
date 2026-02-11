@@ -1,0 +1,6 @@
+[submodule "_external/tools-impact-engine-measure"]
+	path = _external/tools-impact-engine-measure
+	url = https://github.com/eisenhauerIO/tools-impact-engine-measure.git
+[submodule "_external/tools-impact-engine-orchestrator"]
+	path = _external/tools-impact-engine-orchestrator
+	url = https://github.com/eisenhauerIO/tools-impact-engine-orchestrator.git
