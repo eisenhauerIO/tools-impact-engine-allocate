@@ -145,3 +145,21 @@ class TestSolveMinimax:
         result = solve_minimax_regret(sample_initiatives, **SOLVE_DEFAULTS)
         input_ids = {i["id"] for i in sample_initiatives}
         assert set(result["selected_initiatives"]).issubset(input_ids)
+
+    def test_min_worst_return_constrains_selection(self, sample_initiatives):
+        result = solve_minimax_regret(sample_initiatives, **{**SOLVE_DEFAULTS, "min_portfolio_worst_return": 5.0})
+        if result["status"] == "Optimal":
+            total_worst = sum(i["R_worst"] for i in sample_initiatives if i["id"] in result["selected_initiatives"])
+            assert total_worst >= 5.0
+
+    def test_infeasible_worst_return(self):
+        initiatives = [
+            {"id": "A", "cost": 3, "R_best": 10, "R_med": 7, "R_worst": 1, "confidence": 0.9},
+        ]
+        result = solve_minimax_regret(
+            initiatives,
+            total_budget=5,
+            min_confidence_threshold=0.0,
+            min_portfolio_worst_return=999,
+        )
+        assert result["status"] != "Optimal" or result["selected_initiatives"] == []

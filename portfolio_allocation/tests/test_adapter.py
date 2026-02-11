@@ -1,5 +1,7 @@
 """Integration tests for the MinimaxRegretAllocate adapter."""
 
+import logging
+
 from portfolio_allocation.adapter import MinimaxRegretAllocate
 
 
@@ -69,6 +71,21 @@ class TestAdapterEdgeCases:
         adapter = MinimaxRegretAllocate(min_confidence_threshold=1.0)
         result = adapter.execute(sample_event)
         assert result["selected_initiatives"] == []
+
+    def test_min_worst_return_parameter(self, sample_event):
+        adapter = MinimaxRegretAllocate(min_portfolio_worst_return=5.0)
+        result = adapter.execute(sample_event)
+        assert set(result.keys()) == {
+            "selected_initiatives",
+            "predicted_returns",
+            "budget_allocated",
+        }
+
+    def test_non_optimal_logs_warning(self, sample_event, caplog):
+        adapter = MinimaxRegretAllocate(min_confidence_threshold=1.0)
+        with caplog.at_level(logging.WARNING, logger="portfolio_allocation.adapter"):
+            adapter.execute(sample_event)
+        assert "non-optimal status" in caplog.text.lower()
 
 
 class TestAdapterFieldMapping:

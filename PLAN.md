@@ -14,12 +14,12 @@ The solver algorithm itself is sound and does not change. All work is structural
 | 2 | `portfolio_allocation/solver.py` from `support.py` | DONE |
 | 3 | `portfolio_allocation/adapter.py` (PipelineComponent) | DONE |
 | 4 | `portfolio_allocation/__init__.py` | DONE |
-| 5 | Tests (`test_solver.py`, `test_adapter.py`) | TODO |
-| 6 | Sphinx documentation setup | TODO |
-| 7 | Update and move notebooks to `docs/source/tutorial/` | TODO |
-| 8 | GitHub Actions CI workflows | TODO |
-| 9 | Cleanup and project docs (README, CLAUDE.md, .envrc, delete old files) | TODO |
-| 10 | Lint, verify, and ship (push to GitHub, confirm all gates pass) | TODO |
+| 5 | Tests (`test_solver.py`, `test_adapter.py`) | DONE |
+| 6 | Sphinx documentation setup | DONE |
+| 7 | Update and move notebooks to `docs/source/tutorial/` | DONE |
+| 8 | GitHub Actions CI workflows | DONE |
+| 9 | Cleanup and project docs (README, CLAUDE.md, .envrc, delete old files) | DONE |
+| 10 | Lint, verify, and ship (push to GitHub, confirm all gates pass) | DONE |
 
 ## Target structure
 

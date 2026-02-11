@@ -104,13 +104,20 @@ class MinimaxRegretAllocate(PipelineComponent):
             min_portfolio_worst_return=self.min_portfolio_worst_return,
         )
 
-        logger.info(
-            "Allocation complete: status=%s, selected=%d initiatives",
-            solver_result["status"],
-            len(solver_result["selected_initiatives"]),
-        )
-
+        status = solver_result["status"]
         selected_ids = solver_result["selected_initiatives"]
+
+        if status != "Optimal":
+            logger.warning(
+                "Solver returned non-optimal status: %s — returning empty allocation",
+                status,
+            )
+        else:
+            logger.info(
+                "Allocation complete: status=%s, selected=%d initiatives",
+                status,
+                len(selected_ids),
+            )
 
         result = AllocateResult(
             selected_initiatives=selected_ids,

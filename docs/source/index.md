@@ -1,7 +1,7 @@
 # Portfolio Allocation
 
 ```{include} ../../README.md
-:start-after: "# Portfolio Allocation"
+:start-after: # Portfolio Allocation
 ```
 
 ```{toctree}

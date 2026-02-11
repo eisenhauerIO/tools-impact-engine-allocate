@@ -6,3 +6,10 @@ dist/
 *.obj
 docs/build/
 .ruff_cache/
+.venv/
+.hatch/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+*.egg
+*.so
