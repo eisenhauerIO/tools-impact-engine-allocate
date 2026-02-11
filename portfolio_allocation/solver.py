@@ -217,7 +217,9 @@ def solve_minimax_regret(
                     total_actual_returns[scenario_name] += i["effective_returns"][scenario_name]
 
         for scenario_name in SCENARIOS:
-            regrets_for_selected_portfolio[scenario_name] = v_j_star[scenario_name] - total_actual_returns[scenario_name]
+            regrets_for_selected_portfolio[scenario_name] = (
+                v_j_star[scenario_name] - total_actual_returns[scenario_name]
+            )
 
     results["selected_initiatives"] = selected_initiatives
     results["total_cost"] = total_cost
