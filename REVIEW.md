@@ -542,3 +542,167 @@ With multi-rule support as the driving requirement, the priority order shifts:
 | 7 | Expose solver timeout parameter | Low | Medium | 2.8 |
 | 8 | Add input validation at adapter boundary | Low | Medium | 2.5 |
 | 9 | Make scenario set data-driven | Medium | Medium | 2.1 |
+
+---
+
+## 7. Case Study: Bayesian Decision Rule
+
+A Bayesian rule — maximize expected return under scenario probability weights —
+is structurally different from minimax regret. Walking it through the proposed
+architecture validates some design choices and sharpens others.
+
+### 7.1 Formulation
+
+Given scenario weights **w** = {best: w_b, med: w_m, worst: w_w} with Σ w_j = 1,
+the objective is:
+
+```
+maximize  Σ_j( w_j · Σ_i( x_i · eff_return_i_j ) )
+```
+
+The sums commute, yielding a per-initiative weighted return:
+
+```
+maximize  Σ_i( x_i · weighted_return_i )
+where     weighted_return_i = Σ_j( w_j · eff_return_i_j )
+```
+
+Subject to the same budget and minimum worst-case return constraints. This is a
+**single binary knapsack** — one LP solve, compared to minimax regret's four
+(3 scenario knapsacks for v_j_star + 1 main BIP).
+
+Laplace (equal-probability) is the special case where w_j = 1/|scenarios| for all j.
+
+### 7.2 Shared vs. Rule-Specific Code
+
+Mapping the Bayesian rule against the current `solve_minimax_regret` line by line:
+
+| Step | solver.py lines | Minimax regret | Bayesian | Shared? |
+|------|----------------|---------------|----------|---------|
+| Confidence filter | 171-173 | same | same | Yes |
+| Effective returns | 175 | same | same | Yes |
+| Intermediate | 176-179 | v_j_star (3 knapsacks) | weighted_return (arithmetic) | No |
+| BIP formulation | 181-193 | min theta, regret constraints | max Σ(x_i · wr_i) | No |
+| Solve LP | 196-200 | same | same | Yes |
+| Extract selection | 211-217 | same | same | Yes |
+| Rule-specific output | 219-228 | regrets, v_j_star | weights used | No |
+
+This confirms the abstraction boundary from Section 6: preprocessing and result
+extraction are shared; everything between is rule-specific.
+
+### 7.3 Architectural Implications
+
+#### Callable instances, not bare functions
+
+Minimax regret has no rule-specific parameters — it works as a bare function.
+Bayesian **requires** weights, which must be provided before solve time. This means
+the solver protocol must accommodate stateful callables:
+
+```python
+class AllocationSolver(Protocol):
+    def __call__(
+        self,
+        initiatives: list[dict[str, Any]],
+        total_budget: float,
+        min_portfolio_worst_return: float,
+    ) -> SolverResult: ...
+```
+
+Both a plain function and a class instance with `__call__` satisfy this protocol.
+Rule-specific configuration (weights, alpha, timeout) is a **construction** concern,
+not a **call** concern:
+
+```python
+# Minimax regret — no config, works as a function or zero-arg class
+minimax = MinimaxRegretSolver()
+
+# Bayesian — weights baked in at construction
+bayesian = BayesianSolver(weights={"best": 0.25, "med": 0.5, "worst": 0.25})
+
+# Laplace — just Bayesian with equal weights, no separate implementation
+laplace = BayesianSolver(weights={"best": 1/3, "med": 1/3, "worst": 1/3})
+
+# All three satisfy the same call protocol
+adapter = AllocateComponent(solver=bayesian)
+```
+
+#### `calculate_optimal_scenario_returns` is minimax-specific
+
+The Bayesian rule never computes v_j_star. This function (`solver.py:83-124`)
+solves three independent knapsacks to find the maximum achievable return per
+scenario — a concept that only exists in regret-based rules. Under the refactored
+architecture, it moves **inside** the minimax regret solver, not in shared code.
+
+#### Weights couple to the scenario set
+
+The Bayesian solver's weight keys must match scenario names. If
+`SCENARIOS = ["best", "med", "worst"]`, then weights must have exactly those keys.
+This is another argument for making scenarios explicit rather than module-level
+constants — the solver should validate that weight keys align with whatever
+scenarios the preprocessed initiatives carry.
+
+### 7.4 Where Parameters Live After Refactoring
+
+The current `solve_minimax_regret` mixes preprocessing and solver parameters in
+a single signature. The Bayesian rule forces this apart:
+
+| Parameter | Whose concern | Where it moves |
+|-----------|--------------|---------------|
+| `min_confidence_threshold` | Preprocessing | Adapter constructor |
+| `confidence_penalty_func` | Preprocessing | Adapter constructor |
+| `total_budget` | Solver (constraint) | Solver `__call__` |
+| `min_portfolio_worst_return` | Solver (constraint) | Solver `__call__` |
+| `weights` (Bayesian) | Solver (rule config) | Solver `__init__` |
+
+The adapter constructor becomes:
+
+```python
+class AllocateComponent(PipelineComponent):
+    def __init__(
+        self,
+        solver: AllocationSolver = MinimaxRegretSolver(),
+        min_confidence_threshold: float = 0.0,
+        min_portfolio_worst_return: float = 0.0,
+        confidence_penalty_func: Callable = calculate_gamma,
+    ):
+```
+
+Preprocessing stays with the adapter (it is rule-agnostic). Rule-specific config
+stays with the solver instance. The `__call__` signature is clean.
+
+### 7.5 `SolverResult` Fit Check
+
+The Bayesian rule's output maps to `SolverResult` without changes:
+
+```python
+{
+    "status": "Optimal",
+    "selected_initiatives": ["A", "C"],
+    "total_cost": 7,
+    "objective_value": 12.5,                                      # expected weighted return
+    "total_actual_returns": {"best": 24, "med": 16, "worst": 4},
+    "rule": "bayesian",
+    "detail": {
+        "weights": {"best": 0.25, "med": 0.50, "worst": 0.25},
+        "weighted_returns": {"A": 8.5, "C": 4.0},                # per selected initiative
+    },
+}
+```
+
+No extensions needed to the common contract. The `detail` carries weights (for
+reproducibility) and per-initiative weighted returns (for diagnostics).
+
+### 7.6 Summary: Design Validation
+
+The Bayesian rule validates four design choices from the proposed architecture:
+
+| Design choice | Validated by |
+|--------------|-------------|
+| Solver as callable protocol, not bare function | Weights require constructor state |
+| Preprocessing separated from solver | Confidence filter + effective returns are shared; v_j_star is not |
+| `SolverResult` with core + detail | Bayesian output fits without contract changes |
+| `extract_selection` as shared utility | Identical BIP variable → selection logic |
+
+And it sharpens one: the scenario set should be derived from the data (weight keys
+must align with scenario names), reinforcing the recommendation to make scenarios
+data-driven rather than hardcoded at module level.
