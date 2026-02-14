@@ -1,10 +1,13 @@
-"""ALLOCATE component: minimax regret portfolio optimization."""
+"""ALLOCATE component: portfolio optimization for the impact engine pipeline."""
 
 import logging
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from portfolio_allocation.solver import solve_minimax_regret
+from portfolio_allocation.solver._common import calculate_gamma, empty_solver_result, preprocess
+from portfolio_allocation.solver._types import AllocationSolver
+from portfolio_allocation.solver.minimax_regret import MinimaxRegretSolver
 
 logger = logging.getLogger(__name__)
 
@@ -54,30 +57,39 @@ def _to_solver_format(initiative: dict[str, Any]) -> dict[str, Any]:
     return {_FIELD_MAP_IN.get(key, key): value for key, value in initiative.items()}
 
 
-class MinimaxRegretAllocate(PipelineComponent):
-    """Select initiatives via minimax regret optimization.
+class AllocateComponent(PipelineComponent):
+    """Select initiatives via a pluggable decision rule.
 
-    Wraps the PuLP/CBC-based minimax regret solver as a ``PipelineComponent``
-    for the impact engine orchestrator.
+    Handles field mapping and preprocessing (confidence filtering,
+    effective return computation), then delegates portfolio selection
+    to the configured solver.
 
     Parameters
     ----------
+    solver : AllocationSolver, optional
+        Decision rule to use. Defaults to :class:`MinimaxRegretSolver`.
     min_confidence_threshold : float
         Initiatives below this confidence are excluded before optimization.
     min_portfolio_worst_return : float
         Minimum aggregate worst-case return constraint.
+    confidence_penalty_func : Callable[[float], float], optional
+        Maps confidence to penalty factor gamma. Default: ``1 - confidence``.
     """
 
     def __init__(
         self,
+        solver: AllocationSolver | None = None,
         min_confidence_threshold: float = 0.0,
         min_portfolio_worst_return: float = 0.0,
+        confidence_penalty_func: Callable[[float], float] = calculate_gamma,
     ) -> None:
+        self._solver = solver or MinimaxRegretSolver()
         self.min_confidence_threshold = min_confidence_threshold
         self.min_portfolio_worst_return = min_portfolio_worst_return
+        self._confidence_penalty_func = confidence_penalty_func
 
     def execute(self, event: dict) -> dict:
-        """Run minimax regret allocation and return an ``AllocateResult`` dict.
+        """Run allocation and return an ``AllocateResult`` dict with solver detail.
 
         Parameters
         ----------
@@ -89,7 +101,8 @@ class MinimaxRegretAllocate(PipelineComponent):
         -------
         dict
             Serialized ``AllocateResult`` with ``selected_initiatives``,
-            ``predicted_returns``, and ``budget_allocated``.
+            ``predicted_returns``, ``budget_allocated``, and
+            ``solver_detail``.
         """
         initiatives = event["initiatives"]
         budget = event["budget"]
@@ -97,12 +110,16 @@ class MinimaxRegretAllocate(PipelineComponent):
         solver_initiatives = [_to_solver_format(i) for i in initiatives]
         id_to_initiative = {i["initiative_id"]: i for i in initiatives}
 
-        solver_result = solve_minimax_regret(
-            initiatives_data=solver_initiatives,
-            total_budget=budget,
-            min_confidence_threshold=self.min_confidence_threshold,
-            min_portfolio_worst_return=self.min_portfolio_worst_return,
+        processed = preprocess(
+            solver_initiatives,
+            self.min_confidence_threshold,
+            self._confidence_penalty_func,
         )
+
+        if not processed:
+            solver_result = empty_solver_result("No Eligible Initiatives", "none")
+        else:
+            solver_result = self._solver(processed, budget, self.min_portfolio_worst_return)
 
         status = solver_result["status"]
         selected_ids = solver_result["selected_initiatives"]
@@ -119,9 +136,40 @@ class MinimaxRegretAllocate(PipelineComponent):
                 len(selected_ids),
             )
 
-        result = AllocateResult(
-            selected_initiatives=selected_ids,
-            predicted_returns={sid: id_to_initiative[sid]["return_median"] for sid in selected_ids},
-            budget_allocated={sid: id_to_initiative[sid]["cost"] for sid in selected_ids},
+        result = asdict(
+            AllocateResult(
+                selected_initiatives=selected_ids,
+                predicted_returns={sid: id_to_initiative[sid]["return_median"] for sid in selected_ids},
+                budget_allocated={sid: id_to_initiative[sid]["cost"] for sid in selected_ids},
+            )
         )
-        return asdict(result)
+        result["solver_detail"] = {
+            "rule": solver_result["rule"],
+            "objective_value": solver_result["objective_value"],
+            "total_actual_returns": solver_result["total_actual_returns"],
+            "detail": solver_result["detail"],
+        }
+        return result
+
+
+class MinimaxRegretAllocate(AllocateComponent):
+    """Backward-compatible adapter defaulting to minimax regret.
+
+    Parameters
+    ----------
+    min_confidence_threshold : float
+        Initiatives below this confidence are excluded before optimization.
+    min_portfolio_worst_return : float
+        Minimum aggregate worst-case return constraint.
+    """
+
+    def __init__(
+        self,
+        min_confidence_threshold: float = 0.0,
+        min_portfolio_worst_return: float = 0.0,
+    ) -> None:
+        super().__init__(
+            solver=MinimaxRegretSolver(),
+            min_confidence_threshold=min_confidence_threshold,
+            min_portfolio_worst_return=min_portfolio_worst_return,
+        )

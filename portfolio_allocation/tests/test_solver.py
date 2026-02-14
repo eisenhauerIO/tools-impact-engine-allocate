@@ -1,4 +1,4 @@
-"""Unit tests for the minimax regret solver."""
+"""Unit tests for solver common utilities and the minimax regret rule."""
 
 import copy
 
@@ -101,7 +101,7 @@ class TestSolveMinimax:
         r1 = solve_minimax_regret(sample_initiatives, **kwargs)
         r2 = solve_minimax_regret(sample_initiatives, **kwargs)
         assert r1["selected_initiatives"] == r2["selected_initiatives"]
-        assert r1["min_max_regret"] == pytest.approx(r2["min_max_regret"])
+        assert r1["objective_value"] == pytest.approx(r2["objective_value"])
 
     def test_single_initiative(self):
         initiatives = [{"id": "only", "cost": 5, "R_best": 10, "R_med": 7, "R_worst": 3, "confidence": 0.9}]
@@ -132,14 +132,23 @@ class TestSolveMinimax:
         result = solve_minimax_regret(sample_initiatives, **SOLVE_DEFAULTS)
         expected_keys = {
             "status",
-            "min_max_regret",
             "selected_initiatives",
             "total_cost",
+            "objective_value",
             "total_actual_returns",
-            "v_j_star",
-            "regrets_for_selected_portfolio",
+            "rule",
+            "detail",
         }
         assert set(result.keys()) == expected_keys
+
+    def test_rule_identifier(self, sample_initiatives):
+        result = solve_minimax_regret(sample_initiatives, **SOLVE_DEFAULTS)
+        assert result["rule"] == "minimax_regret"
+
+    def test_detail_contains_regret_fields(self, sample_initiatives):
+        result = solve_minimax_regret(sample_initiatives, **SOLVE_DEFAULTS)
+        assert "v_j_star" in result["detail"]
+        assert "regrets" in result["detail"]
 
     def test_selected_are_subset_of_input(self, sample_initiatives):
         result = solve_minimax_regret(sample_initiatives, **SOLVE_DEFAULTS)
