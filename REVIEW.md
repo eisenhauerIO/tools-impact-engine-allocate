@@ -342,3 +342,203 @@ The primary extensibility gaps are:
 None of these require immediate action — the package works correctly for its current
 use case. But addressing items 1-6 in the priority table above would position the
 package well for growth into a multi-solver, multi-scenario allocation framework.
+
+---
+
+## 6. Solver-Agnostic Output Design
+
+With multiple decision theoretic rules planned, the solver output structure becomes
+a critical design decision. The current output shape is minimax-regret-specific and
+would not generalize cleanly.
+
+### 6.1 Problem: Decision Tangled with Diagnostics
+
+The current `solve_minimax_regret` returns seven keys at the same level:
+
+```python
+{
+    "status": "Optimal",                        # common
+    "selected_initiatives": ["A", "C"],         # common
+    "total_cost": 7,                            # common
+    "total_actual_returns": {"best": ..., ...}, # common
+    "min_max_regret": 3.2,                      # rule-specific
+    "v_j_star": {"best": 25, ...},              # rule-specific
+    "regrets_for_selected_portfolio": {...},     # rule-specific
+}
+```
+
+The adapter at `adapter.py:107-108` reads only `status` and `selected_initiatives`,
+then goes back to the **original input** at `adapter.py:124-125` to reconstruct
+`predicted_returns` and `budget_allocated`. The solver's scenario returns, regrets,
+and objective value are computed and discarded.
+
+This structure has two problems:
+
+1. **Adding a new rule means inventing a new result shape.** A maximin solver
+   would return `worst_case_return` and `binding_scenario` instead of
+   `min_max_regret` and `v_j_star` — different keys at the same level.
+   The adapter cannot process these generically.
+
+2. **No way to compare results across rules.** If the pipeline runs both minimax
+   regret and maximin on the same input, there is no common field to compare
+   objective values or scenario-level outcomes.
+
+### 6.2 Classify Every Output Field
+
+Mapping each field by whether it is common to all rules or specific to one:
+
+| Field | Common | Why |
+|-------|--------|-----|
+| `status` | Yes | Every solver has a termination status |
+| `selected_initiatives` | Yes | Every solver produces a portfolio selection |
+| `total_cost` | Yes | Sum of costs — identical logic for all rules |
+| `total_actual_returns` | Yes | Per-scenario portfolio returns — same computation regardless of which rule chose the portfolio |
+| `min_max_regret` | No | This is the minimax regret objective value |
+| `v_j_star` | No | Only regret-based rules need scenario-optimal benchmarks |
+| `regrets_for_selected_portfolio` | No | Regret is a minimax regret concept |
+
+### 6.3 What Other Rules Would Add
+
+| Rule | Objective value represents | Rule-specific detail |
+|------|--------------------------|---------------------|
+| Minimax regret | min max(V_j* − portfolio_j) | v_j_star, regrets per scenario |
+| Maximin | max min(portfolio_j) | binding_scenario |
+| Hurwicz | max [α·best + (1−α)·worst] | alpha |
+| Laplace | max mean(portfolio_j) | — (none) |
+
+Every rule optimizes *something* and may carry rule-specific metadata. The decision
+(which initiatives were selected) has identical shape across all rules.
+
+### 6.4 Proposed: `SolverResult` with Core + Detail
+
+Separate the stable common core from the rule-specific diagnostics:
+
+```python
+class SolverResult(TypedDict):
+    """Common output contract all decision rules must satisfy."""
+
+    status: str                          # solver termination status
+    selected_initiatives: list[str]      # IDs of selected initiatives
+    total_cost: float                    # aggregate cost of selection
+    objective_value: float | None        # what the rule optimized (generic)
+    total_actual_returns: dict[str, float]  # per-scenario portfolio returns
+    rule: str                            # "minimax_regret", "maximin", etc.
+    detail: dict[str, Any]              # rule-specific, opaque to adapter
+```
+
+Key design choices:
+
+- **`objective_value`** replaces `min_max_regret`. Every rule optimizes something;
+  the generic name lets the adapter log and compare without knowing which rule ran.
+
+- **`rule`** is a string identifier. Downstream code that needs to interpret
+  `detail` checks this field first. Without it, a consumer receiving a result dict
+  has no way to know what `detail` contains.
+
+- **`detail`** collects all rule-specific diagnostics in a single, contained
+  namespace. The adapter does not inspect it — it passes it through.
+
+### 6.5 Concrete Detail Shapes per Rule
+
+```python
+# Minimax regret
+detail = {
+    "v_j_star": {"best": 25.0, "med": 18.0, "worst": 7.0},
+    "regrets": {"best": 3.2, "med": 1.1, "worst": 0.0},
+}
+
+# Maximin
+detail = {
+    "binding_scenario": "worst",
+}
+
+# Hurwicz
+detail = {
+    "alpha": 0.6,
+}
+
+# Laplace
+detail = {}
+```
+
+These can be formalized as per-rule `TypedDict` subclasses for type checking, but
+the adapter never needs to parse them — it treats `detail` as opaque pass-through.
+
+### 6.6 Result Extraction as Shared Utility
+
+Lines `solver.py:206-217` extract selected initiatives and compute `total_cost`
+and `total_actual_returns` from PuLP binary variables. This logic is identical
+regardless of decision rule — it is always "iterate over binary variables, collect
+those above 0.5, sum costs and returns":
+
+```python
+def extract_selection(
+    x_vars: dict[str, lp.LpVariable],
+    initiatives: list[dict[str, Any]],
+    scenarios: list[str],
+) -> tuple[list[str], float, dict[str, float]]:
+    """Extract selected initiatives and aggregate returns from solved BIP."""
+    selected: list[str] = []
+    total_cost = 0.0
+    total_returns = {s: 0.0 for s in scenarios}
+    for i in initiatives:
+        if x_vars[i["id"]].varValue > 0.5:
+            selected.append(i["id"])
+            total_cost += i["cost"]
+            for s in scenarios:
+                total_returns[s] += i["effective_returns"][s]
+    return selected, total_cost, total_returns
+```
+
+Each rule calls `extract_selection` after solving its BIP, then packages the
+common fields into `SolverResult` and adds its own `detail`. Zero duplication
+across rules.
+
+### 6.7 Adapter Pass-Through
+
+The `AllocateResult` contract is owned by the orchestrator — its three fields
+(`selected_initiatives`, `predicted_returns`, `budget_allocated`) cannot change.
+But the adapter can attach solver output alongside:
+
+```python
+result = asdict(AllocateResult(
+    selected_initiatives=selected_ids,
+    predicted_returns={sid: id_to_initiative[sid]["return_median"] for sid in selected_ids},
+    budget_allocated={sid: id_to_initiative[sid]["cost"] for sid in selected_ids},
+))
+result["solver_detail"] = {
+    "rule": solver_result["rule"],
+    "objective_value": solver_result["objective_value"],
+    "total_actual_returns": solver_result["total_actual_returns"],
+    "detail": solver_result["detail"],
+}
+return result
+```
+
+This preserves backward compatibility (the three `AllocateResult` keys are
+unchanged) while giving downstream consumers access to:
+
+- **Which rule** was used (`rule`)
+- **How well** the portfolio scores (`objective_value`, `total_actual_returns`)
+- **Rule-specific diagnostics** (`detail`) for reporting, audit, or rule comparison
+
+Components that only need the allocation decision ignore `solver_detail`.
+Components that need to understand *why* this portfolio was chosen — for
+reporting, comparison across rules, or audit — read it without coupling to a
+specific rule's internals.
+
+### 6.8 Updated Priority Table
+
+With multi-rule support as the driving requirement, the priority order shifts:
+
+| # | Recommendation | Effort | Impact | Section |
+|---|---------------|--------|--------|---------|
+| 1 | Define `SolverResult` TypedDict with core + detail separation | Low | Critical | 6.4 |
+| 2 | Extract shared `extract_selection` utility | Low | High | 6.6 |
+| 3 | Accept solver callable via constructor injection in adapter | Low | Critical | 2.2 |
+| 4 | Surface `solver_detail` in adapter output | Low | High | 6.7 |
+| 5 | Extract shared preprocessing (filter + effective returns) | Low | High | — |
+| 6 | Narrow exception handling to PuLP-specific errors | Low | Medium | 2.7 |
+| 7 | Expose solver timeout parameter | Low | Medium | 2.8 |
+| 8 | Add input validation at adapter boundary | Low | Medium | 2.5 |
+| 9 | Make scenario set data-driven | Medium | Medium | 2.1 |
