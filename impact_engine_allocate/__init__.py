@@ -1,7 +1,7 @@
 """Portfolio optimization for the impact engine pipeline."""
 
-from portfolio_allocation.adapter import AllocateComponent, MinimaxRegretAllocate
-from portfolio_allocation.solver import BayesianSolver, MinimaxRegretSolver, solve_minimax_regret
+from impact_engine_allocate.adapter import AllocateComponent, MinimaxRegretAllocate
+from impact_engine_allocate.solver import BayesianSolver, MinimaxRegretSolver, solve_minimax_regret
 
 __all__ = [
     "AllocateComponent",

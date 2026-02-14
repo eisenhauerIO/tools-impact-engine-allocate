@@ -3,7 +3,7 @@
 ## Solver
 
 ```{eval-rst}
-.. automodule:: portfolio_allocation.solver
+.. automodule:: impact_engine_allocate.solver
    :members:
    :undoc-members:
 ```
@@ -11,7 +11,7 @@
 ## Adapter
 
 ```{eval-rst}
-.. automodule:: portfolio_allocation.adapter
+.. automodule:: impact_engine_allocate.adapter
    :members:
    :undoc-members:
 ```

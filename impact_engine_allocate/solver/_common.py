@@ -10,7 +10,7 @@ from typing import Any
 
 import pulp as lp
 
-from portfolio_allocation.solver._types import SolverResult
+from impact_engine_allocate.solver._types import SolverResult
 
 logger = logging.getLogger(__name__)
 

@@ -12,7 +12,7 @@ standalone usage.
 from collections.abc import Callable
 from typing import Any
 
-from portfolio_allocation.solver._common import (
+from impact_engine_allocate.solver._common import (
     SCENARIOS,
     calculate_effective_returns,
     calculate_gamma,
@@ -20,9 +20,9 @@ from portfolio_allocation.solver._common import (
     extract_selection,
     preprocess,
 )
-from portfolio_allocation.solver._types import AllocationSolver, SolverResult
-from portfolio_allocation.solver.bayesian import BayesianSolver
-from portfolio_allocation.solver.minimax_regret import MinimaxRegretSolver
+from impact_engine_allocate.solver._types import AllocationSolver, SolverResult
+from impact_engine_allocate.solver.bayesian import BayesianSolver
+from impact_engine_allocate.solver.minimax_regret import MinimaxRegretSolver
 
 __all__ = [
     "AllocationSolver",

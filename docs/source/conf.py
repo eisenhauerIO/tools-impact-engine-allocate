@@ -1,11 +1,11 @@
-"""Sphinx configuration for Portfolio Allocation documentation."""
+"""Sphinx configuration for Impact Engine Allocate documentation."""
 
 import os
 import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
 
-project = "Portfolio Allocation"
+project = "Impact Engine Allocate"
 author = "eisenhauerIO"
 extensions = [
     "sphinx.ext.autodoc",

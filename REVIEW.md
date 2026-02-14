@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-The `portfolio-allocation` package demonstrates strong architectural foundations —
+The `impact-engine-allocate` package demonstrates strong architectural foundations —
 clean separation between solver and adapter, immutable data flow, and a well-defined
 integration contract. However, several structural decisions limit extensibility for
 future growth. This review identifies what works well and where targeted changes
@@ -251,7 +251,7 @@ __all__ = ["MinimaxRegretAllocate", "solve_minimax_regret"]
 
 This is appropriate. The intermediate functions (`calculate_gamma`,
 `calculate_effective_returns`, `calculate_optimal_scenario_returns`) are accessible
-via `portfolio_allocation.solver` but not promoted to top-level exports. Users who
+via `impact_engine_allocate.solver` but not promoted to top-level exports. Users who
 need them can import explicitly; users who don't are not distracted.
 
 The internal helper `_to_solver_format` is correctly prefixed with underscore.
@@ -272,19 +272,19 @@ the correct layering.
 
 ### 3.3 Test Organization
 
-Tests are co-located inside the package (`portfolio_allocation/tests/`) rather than
+Tests are co-located inside the package (`impact_engine_allocate/tests/`) rather than
 in a top-level `tests/` directory. This is fine for a single-package project but
-means `portfolio_allocation/tests/` ships in the wheel unless explicitly excluded.
+means `impact_engine_allocate/tests/` ships in the wheel unless explicitly excluded.
 
 **Observation**: `pyproject.toml` does not exclude the tests directory from the
 wheel build:
 
 ```toml
 [tool.hatch.build.targets.wheel]
-packages = ["portfolio_allocation"]
+packages = ["impact_engine_allocate"]
 ```
 
-This includes `portfolio_allocation/tests/` in the distributed package. For a
+This includes `impact_engine_allocate/tests/` in the distributed package. For a
 pipeline-internal package this is low-risk, but for a published package the tests
 and fixtures should be excluded from the wheel.
 

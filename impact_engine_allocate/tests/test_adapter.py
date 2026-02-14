@@ -2,8 +2,8 @@
 
 import logging
 
-from portfolio_allocation.adapter import AllocateComponent, MinimaxRegretAllocate
-from portfolio_allocation.solver import BayesianSolver
+from impact_engine_allocate.adapter import AllocateComponent, MinimaxRegretAllocate
+from impact_engine_allocate.solver import BayesianSolver
 
 ALLOCATE_RESULT_KEYS = {"selected_initiatives", "predicted_returns", "budget_allocated", "solver_detail"}
 
@@ -91,7 +91,7 @@ class TestAdapterEdgeCases:
 
     def test_non_optimal_logs_warning(self, sample_event, caplog):
         adapter = MinimaxRegretAllocate(min_confidence_threshold=1.0)
-        with caplog.at_level(logging.WARNING, logger="portfolio_allocation.adapter"):
+        with caplog.at_level(logging.WARNING, logger="impact_engine_allocate.adapter"):
             adapter.execute(sample_event)
         assert "non-optimal status" in caplog.text.lower()
 

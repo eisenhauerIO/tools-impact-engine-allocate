@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "portfolio-allocation"
+name = "impact-engine-allocate"
 version = "0.1.0"
 description = "Minimax regret portfolio optimization for the impact engine pipeline."
 authors = [
@@ -20,13 +20,13 @@ dev = ["pytest", "ruff", "pre-commit"]
 notebooks = ["jupyterlab", "matplotlib", "pandas", "numpy"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["portfolio_allocation"]
+packages = ["impact_engine_allocate"]
 
 [tool.hatch.envs.default]
 features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
-test = "pytest portfolio_allocation/tests/ -v"
+test = "pytest impact_engine_allocate/tests/ -v"
 lint = "ruff check ."
 format = "ruff format ."
 
@@ -65,4 +65,4 @@ convention = "numpy"
 
 [tool.pytest.ini_options]
 addopts = "-v"
-testpaths = ["portfolio_allocation/tests"]
+testpaths = ["impact_engine_allocate/tests"]

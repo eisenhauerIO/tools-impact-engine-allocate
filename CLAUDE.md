@@ -21,14 +21,14 @@ pip install -e ".[dev]"
 
 ## Architecture
 
-- `portfolio_allocation/solver/` — solver package (no orchestrator dependency)
+- `impact_engine_allocate/solver/` — solver package (no orchestrator dependency)
   - `_types.py` — `AllocationSolver` protocol and `SolverResult` TypedDict
   - `_common.py` — shared preprocessing, confidence penalty, result extraction
   - `minimax_regret.py` — minimax regret decision rule (`MinimaxRegretSolver`)
   - `bayesian.py` — weighted-scenario decision rule (`BayesianSolver`)
   - `__init__.py` — public exports and `solve_minimax_regret()` convenience wrapper
-- `portfolio_allocation/adapter.py` — orchestrator integration (`AllocateComponent`, `MinimaxRegretAllocate`)
-- `portfolio_allocation/tests/` — unit and integration tests
+- `impact_engine_allocate/adapter.py` — orchestrator integration (`AllocateComponent`, `MinimaxRegretAllocate`)
+- `impact_engine_allocate/tests/` — unit and integration tests
 - `docs/source/` — Sphinx docs with executable tutorial notebooks
 
 ## Key conventions

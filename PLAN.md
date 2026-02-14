@@ -1,8 +1,8 @@
-# Modernize portfolio-allocation to impact-engine standards
+# Modernize impact-engine-allocate to impact-engine standards
 
 ## Context
 
-The portfolio-allocation project is a prototype minimax regret solver living as flat scripts (`support.py` + notebooks). It needs to become a proper Python package matching the tools-impact-engine ecosystem conventions so it can plug into the orchestrator as the real ALLOCATE component (replacing `MockAllocate`).
+The impact-engine-allocate project is a prototype minimax regret solver living as flat scripts (`support.py` + notebooks). It needs to become a proper Python package matching the tools-impact-engine ecosystem conventions so it can plug into the orchestrator as the real ALLOCATE component (replacing `MockAllocate`).
 
 The solver algorithm itself is sound and does not change. All work is structural, quality, and integration. Changes are confined to this package only — `_external/` is untouched.
 
@@ -11,9 +11,9 @@ The solver algorithm itself is sound and does not change. All work is structural
 | Step | Description | Status |
 |------|-------------|--------|
 | 1 | Scaffolding: `pyproject.toml`, `.gitignore`, `.pre-commit-config.yaml` | DONE |
-| 2 | `portfolio_allocation/solver.py` from `support.py` | DONE |
-| 3 | `portfolio_allocation/adapter.py` (PipelineComponent) | DONE |
-| 4 | `portfolio_allocation/__init__.py` | DONE |
+| 2 | `impact_engine_allocate/solver.py` from `support.py` | DONE |
+| 3 | `impact_engine_allocate/adapter.py` (PipelineComponent) | DONE |
+| 4 | `impact_engine_allocate/__init__.py` | DONE |
 | 5 | Tests (`test_solver.py`, `test_adapter.py`) | DONE |
 | 6 | Sphinx documentation setup | DONE |
 | 7 | Update and move notebooks to `docs/source/tutorial/` | DONE |
@@ -24,7 +24,7 @@ The solver algorithm itself is sound and does not change. All work is structural
 ## Target structure
 
 ```
-portfolio-allocation/
+impact-engine-allocate/
 ├── pyproject.toml                    # NEW (replaces environment.yaml)
 ├── .pre-commit-config.yaml           # NEW
 ├── .gitignore                        # NEW
@@ -36,7 +36,7 @@ portfolio-allocation/
 ├── CLAUDE.md                         # NEW
 ├── README.md                         # REPLACE (expand Readme.md)
 ├── _external/                        # UNCHANGED
-├── portfolio_allocation/             # NEW package
+├── impact_engine_allocate/             # NEW package
 │   ├── __init__.py
 │   ├── solver.py                     # FROM support.py (modernized)
 │   ├── adapter.py                    # NEW (PipelineComponent wrapper)
@@ -74,7 +74,7 @@ portfolio-allocation/
 - Runtime dep: `pulp` only
 - Optional deps: `dev` (pytest, ruff, pre-commit), `notebooks` (jupyterlab, matplotlib, pandas, numpy)
 - Ruff config: `select = ["D", "E", "F", "I"]`, `convention = "numpy"`, `line-length = 120`, `extend-exclude = ["_external", "docs/build"]`
-- pytest: `testpaths = ["portfolio_allocation/tests"]`
+- pytest: `testpaths = ["impact_engine_allocate/tests"]`
 - Hatch scripts: `test`, `lint`, `format`
 - Hatch `docs` environment (separate from default, following orchestrator pattern):
   ```toml
@@ -102,7 +102,7 @@ portfolio-allocation/
 
 After scaffolding: `pre-commit install` to activate hooks
 
-### 2. Create `portfolio_allocation/solver.py` from `support.py`
+### 2. Create `impact_engine_allocate/solver.py` from `support.py`
 
 Modernize without changing algorithm:
 - **Type hints** on all functions (`float`, `list[dict[str, Any]]`, `Callable[[float], float]`, etc.)
@@ -112,7 +112,7 @@ Modernize without changing algorithm:
 - **Rename** `solve_minimax_regret_optimization` → `solve_minimax_regret`
 - **Keep internal field names** (`R_best`, `R_med`, `R_worst`, `id`) — mapping happens in adapter
 
-### 3. Create `portfolio_allocation/adapter.py` — PipelineComponent
+### 3. Create `impact_engine_allocate/adapter.py` — PipelineComponent
 
 The critical integration piece. Wraps solver for orchestrator use.
 
@@ -124,7 +124,7 @@ The critical integration piece. Wraps solver for orchestrator use.
 - **Constructor params**: `min_confidence_threshold` and `min_portfolio_worst_return` (defaults 0.0 = no constraint)
 - Returns `asdict(AllocateResult(...))` matching contract: `selected_initiatives`, `predicted_returns`, `budget_allocated`
 
-### 4. Create `portfolio_allocation/__init__.py`
+### 4. Create `impact_engine_allocate/__init__.py`
 
 Export public API: `MinimaxRegretAllocate`, `solve_minimax_regret`
 
@@ -149,7 +149,7 @@ Following the orchestrator's docs pattern (`docs/source/` layout, separate hatch
 - Extensions: `sphinx.ext.autodoc`, `sphinx.ext.napoleon`, `sphinx.ext.mathjax`, `myst_parser`, `nbsphinx`
 - Theme: `sphinx_rtd_theme`
 - `nbsphinx_execute = "always"`, `nbsphinx_allow_errors = False`
-- `sys.path` insert for `portfolio_allocation` package
+- `sys.path` insert for `impact_engine_allocate` package
 - Source suffixes: `.md` and `.rst`
 
 **`docs/source/index.md`** — Landing page:
@@ -169,8 +169,8 @@ Following the orchestrator's docs pattern (`docs/source/` layout, separate hatch
 - Usage example with orchestrator
 
 **`docs/source/api/index.md`** — API reference:
-- Autodoc for `portfolio_allocation.solver` (public functions)
-- Autodoc for `portfolio_allocation.adapter` (MinimaxRegretAllocate)
+- Autodoc for `impact_engine_allocate.solver` (public functions)
+- Autodoc for `impact_engine_allocate.adapter` (MinimaxRegretAllocate)
 
 **`docs/source/tutorial/`** — Both notebooks live here as the single source of truth for all documentation. Executed by nbsphinx during build.
 - `Tutorial.ipynb` — step-by-step walkthrough
@@ -178,7 +178,7 @@ Following the orchestrator's docs pattern (`docs/source/` layout, separate hatch
 
 ### 7. Update notebooks
 
-- `from support import ...` → `from portfolio_allocation.solver import ...`
+- `from support import ...` → `from impact_engine_allocate.solver import ...`
 - `solve_minimax_regret_optimization` → `solve_minimax_regret`
 - Remove pickle-based regression test cells from Tutorial.ipynb
 - Both notebooks move to `docs/source/tutorial/`

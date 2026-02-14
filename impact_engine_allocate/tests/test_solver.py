@@ -4,7 +4,7 @@ import copy
 
 import pytest
 
-from portfolio_allocation.solver import (
+from impact_engine_allocate.solver import (
     calculate_effective_returns,
     calculate_gamma,
     solve_minimax_regret,

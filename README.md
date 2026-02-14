@@ -1,4 +1,4 @@
-# Portfolio Allocation
+# Impact Engine Allocate
 
 Minimax regret portfolio optimization for the impact engine pipeline.
 
@@ -33,7 +33,7 @@ pip install -e ".[dev]"
 ### Standalone solver
 
 ```python
-from portfolio_allocation.solver import solve_minimax_regret
+from impact_engine_allocate.solver import solve_minimax_regret
 
 initiatives = [
     {"id": "A", "cost": 4, "R_best": 15, "R_med": 10, "R_worst": 2, "confidence": 0.9},
@@ -53,7 +53,7 @@ print(result["selected_initiatives"])
 ### As orchestrator component
 
 ```python
-from portfolio_allocation import MinimaxRegretAllocate
+from impact_engine_allocate import MinimaxRegretAllocate
 
 allocator = MinimaxRegretAllocate(
     min_confidence_threshold=0.5,

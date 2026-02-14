@@ -5,9 +5,9 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from portfolio_allocation.solver._common import calculate_gamma, empty_solver_result, preprocess
-from portfolio_allocation.solver._types import AllocationSolver
-from portfolio_allocation.solver.minimax_regret import MinimaxRegretSolver
+from impact_engine_allocate.solver._common import calculate_gamma, empty_solver_result, preprocess
+from impact_engine_allocate.solver._types import AllocationSolver
+from impact_engine_allocate.solver.minimax_regret import MinimaxRegretSolver
 
 logger = logging.getLogger(__name__)
 

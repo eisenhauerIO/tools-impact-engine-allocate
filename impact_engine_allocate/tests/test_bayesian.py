@@ -2,7 +2,7 @@
 
 import pytest
 
-from portfolio_allocation.solver import BayesianSolver, preprocess
+from impact_engine_allocate.solver import BayesianSolver, preprocess
 
 WEIGHTS_EQUAL = {"best": 1 / 3, "med": 1 / 3, "worst": 1 / 3}
 WEIGHTS_PESSIMISTIC = {"best": 0.1, "med": 0.3, "worst": 0.6}

@@ -28,7 +28,7 @@ The adapter translates between orchestrator and solver field names:
 ## Usage
 
 ```python
-from portfolio_allocation import MinimaxRegretAllocate
+from impact_engine_allocate import MinimaxRegretAllocate
 
 allocator = MinimaxRegretAllocate(
     min_confidence_threshold=0.5,
