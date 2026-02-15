@@ -36,8 +36,13 @@ class TestBayesianSolver:
         solver = BayesianSolver(weights=WEIGHTS_EQUAL)
         result = solver(processed_initiatives, total_budget=10, min_portfolio_worst_return=0.0)
         expected_keys = {
-            "status", "selected_initiatives", "total_cost", "objective_value",
-            "total_actual_returns", "rule", "detail",
+            "status",
+            "selected_initiatives",
+            "total_cost",
+            "objective_value",
+            "total_actual_returns",
+            "rule",
+            "detail",
         }
         assert set(result.keys()) == expected_keys
 

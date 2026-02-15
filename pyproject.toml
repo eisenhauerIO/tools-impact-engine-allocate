@@ -26,7 +26,7 @@ packages = ["impact_engine_allocate"]
 features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
-test = "pytest impact_engine_allocate/tests/ -v"
+test = "pytest tests/ -v"
 lint = "ruff check ."
 format = "ruff format ."
 
@@ -65,4 +65,4 @@ convention = "numpy"
 
 [tool.pytest.ini_options]
 addopts = "-v"
-testpaths = ["impact_engine_allocate/tests"]
+testpaths = ["tests"]
