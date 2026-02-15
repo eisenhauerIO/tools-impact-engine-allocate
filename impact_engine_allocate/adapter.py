@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, Protocol
 
 from impact_engine_allocate.solver._common import calculate_gamma, empty_solver_result, preprocess
 from impact_engine_allocate.solver._types import AllocationSolver
@@ -11,13 +11,13 @@ from impact_engine_allocate.solver.minimax_regret import MinimaxRegretSolver
 
 logger = logging.getLogger(__name__)
 
-from typing import Protocol
-
 
 class PipelineComponent(Protocol):
     """Structural interface for pipeline stage components."""
 
-    def execute(self, event: dict) -> dict: ...
+    def execute(self, event: dict) -> dict:
+        """Process event and return result."""
+        ...
 
 
 @dataclass
