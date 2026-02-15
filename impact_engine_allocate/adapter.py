@@ -11,26 +11,22 @@ from impact_engine_allocate.solver.minimax_regret import MinimaxRegretSolver
 
 logger = logging.getLogger(__name__)
 
-try:
-    from impact_engine_orchestrator.components.base import PipelineComponent
-    from impact_engine_orchestrator.contracts.allocate import AllocateResult
-except ImportError:
-    from abc import ABC, abstractmethod
+from typing import Protocol
 
-    class PipelineComponent(ABC):  # type: ignore[no-redef]
-        """Fallback base when orchestrator is not installed."""
 
-        @abstractmethod
-        def execute(self, event: dict) -> dict:
-            """Process event and return result."""
+class PipelineComponent(Protocol):
+    """Structural interface for pipeline stage components."""
 
-    @dataclass
-    class AllocateResult:  # type: ignore[no-redef]
-        """Fallback contract when orchestrator is not installed."""
+    def execute(self, event: dict) -> dict: ...
 
-        selected_initiatives: list[str]
-        predicted_returns: dict[str, float]
-        budget_allocated: dict[str, float]
+
+@dataclass
+class AllocateResult:
+    """Portfolio selection with budget allocation."""
+
+    selected_initiatives: list[str]
+    predicted_returns: dict[str, float]
+    budget_allocated: dict[str, float]
 
 
 _FIELD_MAP_IN: dict[str, str] = {
