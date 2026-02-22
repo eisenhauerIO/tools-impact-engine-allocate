@@ -40,9 +40,10 @@ print(result["selected_initiatives"])
 
 | Guide | Description |
 |-------|-------------|
-| [Usage](https://eisenhauerio.github.io/tools-impact-engine-allocate/usage.html) | Getting started with basic workflow |
-| [Configuration](https://eisenhauerio.github.io/tools-impact-engine-allocate/configuration.html) | All configuration options |
-| [Design](https://eisenhauerio.github.io/tools-impact-engine-allocate/design.html) | System design and architecture |
+| [Solver Algorithm](https://eisenhauerio.github.io/tools-impact-engine-allocate/solver/index.html) | Minimax regret formulation and math |
+| [Integration](https://eisenhauerio.github.io/tools-impact-engine-allocate/integration/index.html) | Orchestrator integration and field mapping |
+| [Tutorial](https://eisenhauerio.github.io/tools-impact-engine-allocate/tutorial/index.html) | Step-by-step walkthrough with notebooks |
+| [API Reference](https://eisenhauerio.github.io/tools-impact-engine-allocate/api/index.html) | Auto-generated class and function documentation |
 
 ## Development
 
