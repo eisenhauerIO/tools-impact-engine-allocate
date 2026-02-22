@@ -12,4 +12,4 @@ Knowing what works is not enough — you must decide where to invest under const
 
 **Impact Engine — Allocate** solves this with two pluggable decision rules. Minimax regret minimizes the maximum regret across all scenarios. A Bayesian solver maximizes expected return under user-specified scenario weights. Both consume confidence-penalized returns — better evidence enables better bets.
 
-[Documentation](https://eisenhauerio.github.io/tools-impact-engine-allocate/)
+Visit our [documentation](https://eisenhauerio.github.io/tools-impact-engine-allocate/) for details.
