@@ -68,9 +68,7 @@ class BayesianSolver:
         # Per-initiative weighted return (arithmetic — no LP needed).
         weighted_returns: dict[str, float] = {}
         for i in initiatives:
-            weighted_returns[i["id"]] = sum(
-                self.weights[s] * i["effective_returns"][s] for s in scenarios
-            )
+            weighted_returns[i["id"]] = sum(self.weights[s] * i["effective_returns"][s] for s in scenarios)
 
         logger.info("Formulating Bayesian expected-return problem")
         prob = lp.LpProblem("Bayesian_Portfolio", lp.LpMaximize)
