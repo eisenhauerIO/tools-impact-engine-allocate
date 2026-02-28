@@ -16,17 +16,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "pre-commit"]
+dev = ["pytest", "nbmake", "ruff", "pre-commit"]
 notebooks = ["jupyterlab", "matplotlib", "pandas", "numpy"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["impact_engine_allocate"]
 
 [tool.hatch.envs.default]
-features = ["dev"]
+features = ["dev", "notebooks"]
 
 [tool.hatch.envs.default.scripts]
-test = "pytest tests/ -v"
+test = "pytest -v --nbmake {args}"
 lint = "ruff check . && ruff format --check ."
 format = "ruff format ."
 
@@ -65,4 +65,4 @@ convention = "numpy"
 
 [tool.pytest.ini_options]
 addopts = "-v"
-testpaths = ["tests"]
+testpaths = ["tests", "docs/source"]

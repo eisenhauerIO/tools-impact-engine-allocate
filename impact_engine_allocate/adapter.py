@@ -156,26 +156,3 @@ class AllocateComponent(PipelineComponent):
             "detail": solver_result["detail"],
         }
         return result
-
-
-class MinimaxRegretAllocate(AllocateComponent):
-    """Backward-compatible adapter defaulting to minimax regret.
-
-    Parameters
-    ----------
-    min_confidence_threshold : float
-        Initiatives below this confidence are excluded before optimization.
-    min_portfolio_worst_return : float
-        Minimum aggregate worst-case return constraint.
-    """
-
-    def __init__(
-        self,
-        min_confidence_threshold: float = 0.0,
-        min_portfolio_worst_return: float = 0.0,
-    ) -> None:
-        super().__init__(
-            solver=MinimaxRegretSolver(),
-            min_confidence_threshold=min_confidence_threshold,
-            min_portfolio_worst_return=min_portfolio_worst_return,
-        )
