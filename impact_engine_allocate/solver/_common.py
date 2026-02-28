@@ -133,7 +133,7 @@ def extract_selection(
     total_cost = 0.0
     total_returns = {s: 0.0 for s in scenarios}
     for i in initiatives:
-        if x_vars[i["id"]].varValue > 0.5:
+        if (x_vars[i["id"]].varValue or 0) > 0.5:
             selected.append(i["id"])
             total_cost += i["cost"]
             for s in scenarios:

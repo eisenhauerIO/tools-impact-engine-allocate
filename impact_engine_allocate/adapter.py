@@ -28,6 +28,14 @@ class AllocateResult:
     predicted_returns: dict[str, float]
     budget_allocated: dict[str, float]
 
+    def __post_init__(self) -> None:
+        """Validate that return and budget dicts are consistent with selected initiatives."""
+        selected = set(self.selected_initiatives)
+        if set(self.predicted_returns) != selected:
+            raise ValueError("predicted_returns keys must match selected_initiatives")
+        if set(self.budget_allocated) != selected:
+            raise ValueError("budget_allocated keys must match selected_initiatives")
+
 
 _FIELD_MAP_IN: dict[str, str] = {
     "initiative_id": "id",
@@ -100,11 +108,13 @@ class AllocateComponent(PipelineComponent):
             ``predicted_returns``, ``budget_allocated``, and
             ``solver_detail``.
         """
+        if "initiatives" not in event or "budget" not in event:
+            raise ValueError("event must contain 'initiatives' and 'budget'")
         initiatives = event["initiatives"]
         budget = event["budget"]
 
         solver_initiatives = [_to_solver_format(i) for i in initiatives]
-        id_to_initiative = {i["initiative_id"]: i for i in initiatives}
+        id_to_initiative = {i["id"]: i for i in solver_initiatives}
 
         processed = preprocess(
             solver_initiatives,
@@ -135,7 +145,7 @@ class AllocateComponent(PipelineComponent):
         result = asdict(
             AllocateResult(
                 selected_initiatives=selected_ids,
-                predicted_returns={sid: id_to_initiative[sid]["return_median"] for sid in selected_ids},
+                predicted_returns={sid: id_to_initiative[sid]["R_med"] for sid in selected_ids},
                 budget_allocated={sid: id_to_initiative[sid]["cost"] for sid in selected_ids},
             )
         )

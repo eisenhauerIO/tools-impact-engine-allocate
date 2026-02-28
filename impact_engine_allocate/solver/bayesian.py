@@ -10,7 +10,7 @@ from typing import Any
 
 import pulp as lp
 
-from impact_engine_allocate.solver._common import empty_solver_result, extract_selection
+from impact_engine_allocate.solver._common import SCENARIOS, empty_solver_result, extract_selection
 from impact_engine_allocate.solver._types import SolverResult
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,8 @@ class BayesianSolver:
     """
 
     def __init__(self, weights: dict[str, float]) -> None:
+        if set(weights.keys()) != set(SCENARIOS):
+            raise ValueError(f"weights keys must be exactly {SCENARIOS}, got {sorted(weights.keys())}")
         if any(w < 0 for w in weights.values()):
             raise ValueError("Weights must be non-negative.")
         if abs(sum(weights.values()) - 1.0) > 1e-9:
