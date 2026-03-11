@@ -6,7 +6,7 @@ Portfolio allocation for the impact engine pipeline. Implements pluggable decisi
 solvers (minimax regret, Bayesian weighted-scenario) using PuLP/CBC, wrapped as a
 `PipelineComponent` for the orchestrator.
 
-## Environment
+## Development setup
 
 ```bash
 pip install hatch
@@ -22,15 +22,21 @@ hatch env create
 
 ## Architecture
 
+- `impact_engine_allocate/models.py` — `AllocateResult` dataclass for pipeline output
 - `impact_engine_allocate/solver/` — solver package (no orchestrator dependency)
   - `_types.py` — `AllocationSolver` protocol and `SolverResult` TypedDict
   - `_common.py` — shared preprocessing, confidence penalty, result extraction
   - `minimax_regret.py` — minimax regret decision rule (`MinimaxRegretSolver`)
   - `bayesian.py` — weighted-scenario decision rule (`BayesianSolver`)
   - `__init__.py` — public exports and `solve_minimax_regret()` convenience wrapper
-- `impact_engine_allocate/adapter.py` — orchestrator integration (`AllocateComponent`)
 - `impact_engine_allocate/tests/` — unit and integration tests
 - `docs/source/` — Sphinx docs with executable tutorial notebooks
+
+## Verification
+
+1. `hatch run lint` — confirm no ruff errors
+2. `hatch run test` — all tests pass
+3. `hatch run docs:build` — docs build without warnings
 
 ## Key conventions
 
