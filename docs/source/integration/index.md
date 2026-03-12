@@ -2,14 +2,15 @@
 
 ## Overview
 
-`AllocateComponent` implements the `PipelineComponent` interface from the
-impact engine orchestrator. It replaces `MockAllocate` as the **ALLOCATE** stage.
+The allocate package exposes a functional API (`allocate()`) that the orchestrator wraps
+in its own `AllocateComponent` adapter. The adapter lives in the orchestrator repo
+(`impact_engine_orchestrator/components/allocate/`), not in this package.
 
 ## Field Mapping
 
-The adapter translates between orchestrator and solver field names:
+The orchestrator adapter translates between orchestrator and allocation field names:
 
-| Orchestrator Field | Solver Field |
+| Orchestrator Field | Allocation Field |
 |-------------------|--------------|
 | `initiative_id` | `id` |
 | `return_best` | `R_best` |
@@ -18,61 +19,35 @@ The adapter translates between orchestrator and solver field names:
 | `confidence` | `confidence` (unchanged) |
 | `cost` | `cost` (unchanged) |
 
-## Constructor Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `solver` | `AllocationSolver` | `MinimaxRegretSolver()` | Decision rule to use |
-| `min_confidence_threshold` | `float` | `0.0` | Exclude initiatives below this confidence |
-| `min_portfolio_worst_return` | `float` | `0.0` | Minimum aggregate worst-case return |
-
-## Usage
+## Standalone Usage
 
 ```python
-from impact_engine_allocate import AllocateComponent
+from impact_engine_allocate import allocate, load_config, load_initiatives
 
-allocator = AllocateComponent(
-    min_confidence_threshold=0.5,
-    min_portfolio_worst_return=4.0,
-)
-
-# event follows the orchestrator contract
-event = {
-    "initiatives": [
-        {
-            "initiative_id": "A",
-            "cost": 4,
-            "return_best": 15,
-            "return_median": 10,
-            "return_worst": 2,
-            "confidence": 0.9,
-        },
-    ],
-    "budget": 10,
-}
-
-result = allocator.execute(event)
-# Returns: {"selected_initiatives": [...], "predicted_returns": {...}, "budget_allocated": {...}}
+config = load_config("allocation_config.yaml")
+initiatives = load_initiatives("path/to/pipeline/output")
+result = allocate(config, initiatives)
 ```
 
-To use a different decision rule, inject it via the `solver` parameter:
+To use a different decision rule:
 
 ```python
-from impact_engine_allocate import AllocateComponent
-from impact_engine_allocate.solver import BayesianSolver
+from impact_engine_allocate import BayesianAllocation
 
-allocator = AllocateComponent(
-    solver=BayesianSolver(weights={"best": 0.25, "med": 0.50, "worst": 0.25}),
-)
+rule = BayesianAllocation(weights={"best": 0.25, "med": 0.50, "worst": 0.25})
+result = rule.solve(initiatives, budget=10)
 ```
 
 ## Output Contract
 
-The `execute()` method returns a dict matching `AllocateResult`:
+The `allocate()` function returns a `RuleResult` dict:
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `status` | `str` | Solver status |
 | `selected_initiatives` | `list[str]` | IDs of selected initiatives |
-| `predicted_returns` | `dict[str, float]` | Median return per selected initiative |
-| `budget_allocated` | `dict[str, float]` | Cost per selected initiative |
-| `solver_detail` | `dict` | Rule identifier, objective value, scenario returns, rule-specific detail |
+| `total_cost` | `float` | Total cost of selected portfolio |
+| `objective_value` | `float` | Objective function value |
+| `total_actual_returns` | `dict[str, float]` | Scenario returns for portfolio |
+| `rule` | `str` | Decision rule identifier |
+| `detail` | `dict` | Rule-specific detail (scenario returns, regrets, etc.) |
