@@ -1,9 +1,9 @@
-"""Type definitions for the solver protocol and result contract."""
+"""Type definitions for the allocation rule protocol and result contract."""
 
 from typing import Any, Protocol, TypedDict
 
 
-class SolverResult(TypedDict):
+class RuleResult(TypedDict):
     """Common output contract all decision rules must satisfy.
 
     Parameters
@@ -33,11 +33,11 @@ class SolverResult(TypedDict):
     detail: dict[str, Any]
 
 
-class AllocationSolver(Protocol):
+class AllocationRule(Protocol):
     """Protocol for decision-rule solvers.
 
     Implementations receive preprocessed initiatives (with ``effective_returns``
-    already computed) and return a :class:`SolverResult`.
+    already computed) and return a :class:`RuleResult`.
     """
 
     def __call__(
@@ -45,4 +45,6 @@ class AllocationSolver(Protocol):
         initiatives: list[dict[str, Any]],
         total_budget: float,
         min_portfolio_worst_return: float,
-    ) -> SolverResult: ...
+    ) -> RuleResult:
+        """Process initiatives and return allocation result."""
+        ...

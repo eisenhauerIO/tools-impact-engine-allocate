@@ -1,20 +1,16 @@
-"""Unit tests for solver common utilities and the minimax regret rule."""
+"""Unit tests for allocation common utilities and the minimax regret rule."""
 
 import copy
 
 import pytest
 
-from impact_engine_allocate.solver import (
+from impact_engine_allocate.allocation import (
+    MinimaxRegretAllocation,
     calculate_effective_returns,
     calculate_gamma,
-    solve_minimax_regret,
+    empty_rule_result,
+    preprocess,
 )
-
-SOLVE_DEFAULTS = {
-    "total_budget": 10,
-    "min_confidence_threshold": 0.0,
-    "min_portfolio_worst_return": 0.0,
-}
 
 
 class TestCalculateGamma:
@@ -81,40 +77,51 @@ class TestCalculateEffectiveReturns:
         assert eff["med"] == pytest.approx(5.0)
 
 
-class TestSolveMinimax:
+class TestMinimaxRegretAllocation:
+    def _solve(self, initiatives, **kwargs):
+        defaults = {
+            "total_budget": 10,
+            "min_confidence_threshold": 0.0,
+            "min_portfolio_worst_return": 0.0,
+        }
+        defaults.update(kwargs)
+        processed = preprocess(initiatives, defaults["min_confidence_threshold"])
+        if not processed:
+            return empty_rule_result("No Eligible Initiatives", "minimax_regret")
+        solver = MinimaxRegretAllocation()
+        return solver(processed, defaults["total_budget"], defaults["min_portfolio_worst_return"])
+
     def test_optimal_status(self, sample_initiatives):
-        result = solve_minimax_regret(sample_initiatives, **{**SOLVE_DEFAULTS, "min_confidence_threshold": 0.5})
+        result = self._solve(sample_initiatives, min_confidence_threshold=0.5)
         assert result["status"] == "Optimal"
 
     def test_budget_constraint_respected(self, sample_initiatives):
-        budget = 10
-        result = solve_minimax_regret(sample_initiatives, **{**SOLVE_DEFAULTS, "total_budget": budget})
-        assert result["total_cost"] <= budget
+        result = self._solve(sample_initiatives, total_budget=10)
+        assert result["total_cost"] <= 10
 
     def test_confidence_filtering(self, sample_initiatives):
-        result = solve_minimax_regret(sample_initiatives, **{**SOLVE_DEFAULTS, "min_confidence_threshold": 0.5})
+        result = self._solve(sample_initiatives, min_confidence_threshold=0.5)
         low_conf_ids = {i["id"] for i in sample_initiatives if i["confidence"] < 0.5}
         assert not low_conf_ids.intersection(result["selected_initiatives"])
 
     def test_determinism(self, sample_initiatives):
-        kwargs = {**SOLVE_DEFAULTS, "min_confidence_threshold": 0.5}
-        r1 = solve_minimax_regret(sample_initiatives, **kwargs)
-        r2 = solve_minimax_regret(sample_initiatives, **kwargs)
+        r1 = self._solve(sample_initiatives, min_confidence_threshold=0.5)
+        r2 = self._solve(sample_initiatives, min_confidence_threshold=0.5)
         assert r1["selected_initiatives"] == r2["selected_initiatives"]
         assert r1["objective_value"] == pytest.approx(r2["objective_value"])
 
     def test_single_initiative(self):
         initiatives = [{"id": "only", "cost": 5, "R_best": 10, "R_med": 7, "R_worst": 3, "confidence": 0.9}]
-        result = solve_minimax_regret(initiatives, **SOLVE_DEFAULTS)
+        result = self._solve(initiatives)
         assert result["status"] == "Optimal"
         assert result["selected_initiatives"] == ["only"]
 
     def test_zero_budget(self, sample_initiatives):
-        result = solve_minimax_regret(sample_initiatives, **{**SOLVE_DEFAULTS, "total_budget": 0})
+        result = self._solve(sample_initiatives, total_budget=0)
         assert result["selected_initiatives"] == []
 
     def test_all_filtered_by_confidence(self, sample_initiatives):
-        result = solve_minimax_regret(sample_initiatives, **{**SOLVE_DEFAULTS, "min_confidence_threshold": 1.0})
+        result = self._solve(sample_initiatives, min_confidence_threshold=1.0)
         assert result["status"] == "No Eligible Initiatives"
         assert result["selected_initiatives"] == []
 
@@ -124,12 +131,12 @@ class TestSolveMinimax:
             {"id": "B", "cost": 3, "R_best": 9, "R_med": 6, "R_worst": 3, "confidence": 0.7},
             {"id": "C", "cost": 3, "R_best": 8, "R_med": 5, "R_worst": 4, "confidence": 0.7},
         ]
-        result = solve_minimax_regret(initiatives, **{**SOLVE_DEFAULTS, "total_budget": 6})
+        result = self._solve(initiatives, total_budget=6)
         assert result["status"] == "Optimal"
         assert len(result["selected_initiatives"]) <= 2
 
     def test_result_keys(self, sample_initiatives):
-        result = solve_minimax_regret(sample_initiatives, **SOLVE_DEFAULTS)
+        result = self._solve(sample_initiatives)
         expected_keys = {
             "status",
             "selected_initiatives",
@@ -142,21 +149,21 @@ class TestSolveMinimax:
         assert set(result.keys()) == expected_keys
 
     def test_rule_identifier(self, sample_initiatives):
-        result = solve_minimax_regret(sample_initiatives, **SOLVE_DEFAULTS)
+        result = self._solve(sample_initiatives)
         assert result["rule"] == "minimax_regret"
 
     def test_detail_contains_regret_fields(self, sample_initiatives):
-        result = solve_minimax_regret(sample_initiatives, **SOLVE_DEFAULTS)
+        result = self._solve(sample_initiatives)
         assert "v_j_star" in result["detail"]
         assert "regrets" in result["detail"]
 
     def test_selected_are_subset_of_input(self, sample_initiatives):
-        result = solve_minimax_regret(sample_initiatives, **SOLVE_DEFAULTS)
+        result = self._solve(sample_initiatives)
         input_ids = {i["id"] for i in sample_initiatives}
         assert set(result["selected_initiatives"]).issubset(input_ids)
 
     def test_min_worst_return_constrains_selection(self, sample_initiatives):
-        result = solve_minimax_regret(sample_initiatives, **{**SOLVE_DEFAULTS, "min_portfolio_worst_return": 5.0})
+        result = self._solve(sample_initiatives, min_portfolio_worst_return=5.0)
         if result["status"] == "Optimal":
             total_worst = sum(i["R_worst"] for i in sample_initiatives if i["id"] in result["selected_initiatives"])
             assert total_worst >= 5.0
@@ -165,7 +172,7 @@ class TestSolveMinimax:
         initiatives = [
             {"id": "A", "cost": 3, "R_best": 10, "R_med": 7, "R_worst": 1, "confidence": 0.9},
         ]
-        result = solve_minimax_regret(
+        result = self._solve(
             initiatives,
             total_budget=5,
             min_confidence_threshold=0.0,

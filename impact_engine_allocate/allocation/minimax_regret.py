@@ -11,8 +11,8 @@ from typing import Any
 
 import pulp as lp
 
-from impact_engine_allocate.solver._common import SCENARIOS, empty_solver_result, extract_selection
-from impact_engine_allocate.solver._types import SolverResult
+from impact_engine_allocate.allocation._common import SCENARIOS, empty_rule_result, extract_selection
+from impact_engine_allocate.allocation._types import RuleResult
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +61,13 @@ def _calculate_optimal_scenario_returns(
     return v_j_star
 
 
-class MinimaxRegretSolver:
+class MinimaxRegretAllocation:
     """Minimax regret decision rule.
 
     Minimizes the maximum regret across best, median, and worst-case
     scenarios, subject to budget and minimum worst-case return constraints.
 
-    This solver receives **preprocessed** initiatives (with
+    This rule receives **preprocessed** initiatives (with
     ``effective_returns`` already computed by the shared preprocessing step).
     """
 
@@ -76,7 +76,7 @@ class MinimaxRegretSolver:
         initiatives: list[dict[str, Any]],
         total_budget: float,
         min_portfolio_worst_return: float,
-    ) -> SolverResult:
+    ) -> RuleResult:
         """Solve the minimax regret portfolio selection problem.
 
         Parameters
@@ -90,14 +90,14 @@ class MinimaxRegretSolver:
 
         Returns
         -------
-        SolverResult
+        RuleResult
         """
         scenarios = SCENARIOS
 
         v_j_star = _calculate_optimal_scenario_returns(initiatives, total_budget)
 
         if any(val == -math.inf for val in v_j_star.values()):
-            result = empty_solver_result("Error in V_j_star calculation", "minimax_regret")
+            result = empty_rule_result("Error in V_j_star calculation", "minimax_regret")
             result["detail"] = {"v_j_star": v_j_star, "regrets": {}}
             return result
 
@@ -120,7 +120,7 @@ class MinimaxRegretSolver:
             prob.solve(lp.PULP_CBC_CMD(msg=False))
         except Exception:
             logger.exception("Error solving minimax regret problem")
-            result = empty_solver_result("Error solving main problem", "minimax_regret")
+            result = empty_rule_result("Error solving main problem", "minimax_regret")
             result["detail"] = {"v_j_star": v_j_star, "regrets": {}}
             return result
 

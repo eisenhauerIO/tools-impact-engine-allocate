@@ -2,20 +2,19 @@
 
 ## Current state
 
-The solver package is functional with two decision rules (minimax regret, Bayesian) and
-a shared preprocessing pipeline. The adapter has been moved into the orchestrator repo.
+The allocation package provides two decision rules (minimax regret, Bayesian) behind the
+`AllocationRule` protocol, a shared preprocessing pipeline, and a unified `allocate()` facade
+for standalone use. The adapter has been moved into the orchestrator repo.
 
-- Two pluggable solvers behind the `AllocationSolver` protocol
+- Two pluggable rules behind the `AllocationRule` protocol
 - Confidence-penalized effective returns via shared preprocessing
+- `allocate(config, data_dir)` facade for standalone use
+- `load_config()` + `AllocationConfig` for parse-once config pattern
+- `load_initiatives()` job reader for pipeline output directories
 - `AllocateResult` dataclass for pipeline output
 - Sphinx documentation with executable tutorial notebooks
 - CI with ruff linting and pytest
 
 ## Phase 0 — Add a public solver interface / facade
 
-**Status**: planned
-
-Right now users must import and instantiate solver classes (`BayesianSolver`,
-`MinimaxRegretSolver`) directly. We need a unified entry-point (e.g. a factory
-function or facade) that selects and runs the appropriate solver by name, so
-callers don't couple to concrete classes.
+**Status**: complete

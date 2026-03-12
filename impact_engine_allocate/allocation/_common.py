@@ -1,4 +1,4 @@
-"""Shared utilities for portfolio allocation solvers.
+"""Shared utilities for portfolio allocation rules.
 
 Contains preprocessing (confidence filtering, effective return computation),
 result extraction from PuLP variables, and the default confidence penalty.
@@ -10,7 +10,7 @@ from typing import Any
 
 import pulp as lp
 
-from impact_engine_allocate.solver._types import SolverResult
+from impact_engine_allocate.allocation._types import RuleResult
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ def preprocess(
     Parameters
     ----------
     initiatives : list[dict[str, Any]]
-        Raw initiatives with solver field names.
+        Raw initiatives with allocation field names.
     min_confidence_threshold : float
         Initiatives below this confidence are excluded.
     confidence_penalty_func : Callable[[float], float], optional
@@ -141,8 +141,8 @@ def extract_selection(
     return selected, total_cost, total_returns
 
 
-def empty_solver_result(status: str, rule: str, scenarios: list[str] | None = None) -> SolverResult:
-    """Build a ``SolverResult`` with no selection.
+def empty_rule_result(status: str, rule: str, scenarios: list[str] | None = None) -> RuleResult:
+    """Build a ``RuleResult`` with no selection.
 
     Parameters
     ----------
@@ -155,7 +155,7 @@ def empty_solver_result(status: str, rule: str, scenarios: list[str] | None = No
 
     Returns
     -------
-    SolverResult
+    RuleResult
     """
     if scenarios is None:
         scenarios = SCENARIOS

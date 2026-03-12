@@ -10,13 +10,13 @@ from typing import Any
 
 import pulp as lp
 
-from impact_engine_allocate.solver._common import SCENARIOS, empty_solver_result, extract_selection
-from impact_engine_allocate.solver._types import SolverResult
+from impact_engine_allocate.allocation._common import SCENARIOS, empty_rule_result, extract_selection
+from impact_engine_allocate.allocation._types import RuleResult
 
 logger = logging.getLogger(__name__)
 
 
-class BayesianSolver:
+class BayesianAllocation:
     """Bayesian expected-return decision rule.
 
     Maximizes the weighted sum of scenario returns, where weights represent
@@ -49,7 +49,7 @@ class BayesianSolver:
         initiatives: list[dict[str, Any]],
         total_budget: float,
         min_portfolio_worst_return: float,
-    ) -> SolverResult:
+    ) -> RuleResult:
         """Solve the Bayesian portfolio selection problem.
 
         Parameters
@@ -63,7 +63,7 @@ class BayesianSolver:
 
         Returns
         -------
-        SolverResult
+        RuleResult
         """
         scenarios = list(self.weights.keys())
 
@@ -85,7 +85,7 @@ class BayesianSolver:
             prob.solve(lp.PULP_CBC_CMD(msg=False))
         except Exception:
             logger.exception("Error solving Bayesian problem")
-            return empty_solver_result("Error solving main problem", "bayesian", scenarios)
+            return empty_rule_result("Error solving main problem", "bayesian", scenarios)
 
         status = lp.LpStatus[prob.status]
         objective_value = lp.value(prob.objective) if prob.status == lp.LpStatusOptimal else None

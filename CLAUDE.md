@@ -3,8 +3,8 @@
 ## Project overview
 
 Portfolio allocation for the impact engine pipeline. Implements pluggable decision-rule
-solvers (minimax regret, Bayesian weighted-scenario) using PuLP/CBC, wrapped as a
-`PipelineComponent` for the orchestrator.
+solvers (minimax regret, Bayesian weighted-scenario) using PuLP/CBC, with a unified
+`allocate()` facade for standalone use and a `PipelineComponent` adapter for the orchestrator.
 
 ## Development setup
 
@@ -23,13 +23,15 @@ hatch env create
 ## Architecture
 
 - `impact_engine_allocate/models.py` — `AllocateResult` dataclass for pipeline output
-- `impact_engine_allocate/solver/` — solver package (no orchestrator dependency)
-  - `_types.py` — `AllocationSolver` protocol and `SolverResult` TypedDict
+- `impact_engine_allocate/config.py` — `AllocationConfig` dataclass + `load_config()` (parse-once pattern)
+- `impact_engine_allocate/job_reader.py` — `load_initiatives()` reads pipeline output directories
+- `impact_engine_allocate/allocation/` — allocation rules package (no orchestrator dependency)
+  - `_types.py` — `AllocationRule` protocol and `RuleResult` TypedDict
   - `_common.py` — shared preprocessing, confidence penalty, result extraction
-  - `minimax_regret.py` — minimax regret decision rule (`MinimaxRegretSolver`)
-  - `bayesian.py` — weighted-scenario decision rule (`BayesianSolver`)
-  - `__init__.py` — public exports and `solve_minimax_regret()` convenience wrapper
-- `impact_engine_allocate/tests/` — unit and integration tests
+  - `minimax_regret.py` — minimax regret decision rule (`MinimaxRegretAllocation`)
+  - `bayesian.py` — weighted-scenario decision rule (`BayesianAllocation`)
+  - `__init__.py` — public exports and `allocate()` facade
+- `tests/` — unit and integration tests
 - `docs/source/` — Sphinx docs with executable tutorial notebooks
 
 ## Verification
@@ -42,6 +44,6 @@ hatch env create
 
 - NumPy-style docstrings
 - Logging via `logging.getLogger(__name__)` (no print statements)
-- Solvers conform to the `AllocationSolver` protocol and return `SolverResult`
-- Solver uses internal field names (`id`, `R_best`, `R_med`, `R_worst`); adapter handles mapping
+- Rules conform to the `AllocationRule` protocol and return `RuleResult`
+- Rules use internal field names (`id`, `R_best`, `R_med`, `R_worst`); adapter handles mapping
 - `_external/` contains reference submodules — do not modify

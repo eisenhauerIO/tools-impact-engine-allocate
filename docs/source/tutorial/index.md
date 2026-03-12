@@ -1,6 +1,6 @@
 # Tutorials
 
-Step-by-step guides for using the portfolio allocation solver.
+Step-by-step guides for using the portfolio allocation rules.
 
 ```{toctree}
 :maxdepth: 1
