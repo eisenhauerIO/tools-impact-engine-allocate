@@ -1,15 +1,22 @@
-# Impact Engine Allocate
-
 ```{include} ../../README.md
-:start-after: # Impact Engine Allocate
 ```
 
 ```{toctree}
+:hidden:
 :maxdepth: 2
-:caption: Contents
+:caption: Guides
 
+guides/usage
+guides/configuration
 solver/index
-integration/index
-tutorial/index
 api/index
+```
+
+```{toctree}
+:hidden:
+:maxdepth: 2
+:caption: Tutorials
+
+tutorial/Tutorial
+tutorial/Visualization
 ```
