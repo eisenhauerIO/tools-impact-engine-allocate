@@ -31,7 +31,7 @@ __all__ = [
     "MinimaxRegretAllocation",
     "RuleResult",
     "SCENARIOS",
-    "allocate",
+    "allocate_portfolio",
     "calculate_effective_returns",
     "calculate_gamma",
     "empty_rule_result",
@@ -45,7 +45,7 @@ _ALLOCATION_REGISTRY: dict[str, type] = {
 }
 
 
-def allocate(
+def allocate_portfolio(
     config: str | Path | dict[str, Any],
     data_dir: str | Path,
 ) -> RuleResult:

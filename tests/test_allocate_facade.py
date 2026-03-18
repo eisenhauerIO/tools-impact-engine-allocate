@@ -2,7 +2,7 @@
 
 import json
 
-from impact_engine_allocate.allocation import allocate
+from impact_engine_allocate.allocation import allocate_portfolio
 
 
 def _write_json(path, data):
@@ -52,7 +52,7 @@ class TestAllocateFacade:
                 "costs": {"A": 50, "B": 60},
             }
         }
-        result = allocate(config, tmp_path)
+        result = allocate_portfolio(config, tmp_path)
         assert result["status"] == "Optimal"
         assert set(result["selected_initiatives"]).issubset({"A", "B"})
         assert result["rule"] == "minimax_regret"
@@ -67,7 +67,7 @@ class TestAllocateFacade:
                 "weights": {"best": 0.33, "med": 0.33, "worst": 0.34},
             }
         }
-        result = allocate(config, tmp_path)
+        result = allocate_portfolio(config, tmp_path)
         assert result["status"] == "Optimal"
         assert result["rule"] == "bayesian"
 
@@ -83,7 +83,7 @@ class TestAllocateFacade:
                 "min_confidence_threshold": 0.5,
             }
         }
-        result = allocate(config, tmp_path)
+        result = allocate_portfolio(config, tmp_path)
         assert "B" not in result["selected_initiatives"]
 
     def test_all_filtered_returns_empty(self, tmp_path):
@@ -95,7 +95,7 @@ class TestAllocateFacade:
                 "min_confidence_threshold": 0.9,
             }
         }
-        result = allocate(config, tmp_path)
+        result = allocate_portfolio(config, tmp_path)
         assert result["status"] == "No Eligible Initiatives"
         assert result["selected_initiatives"] == []
 
@@ -104,13 +104,13 @@ class TestAllocateFacade:
         yaml_content = "allocation:\n  budget: 100\n  costs:\n    A: 30\n"
         config_file = tmp_path / "config.yaml"
         config_file.write_text(yaml_content)
-        result = allocate(str(config_file), tmp_path / "data")
+        result = allocate_portfolio(str(config_file), tmp_path / "data")
         assert result["status"] == "Optimal"
 
     def test_result_keys(self, tmp_path):
         _setup_data_dir(tmp_path, {"A": {}})
         config = {"allocation": {"budget": 100, "costs": {"A": 30}}}
-        result = allocate(config, tmp_path)
+        result = allocate_portfolio(config, tmp_path)
         expected = {
             "status",
             "selected_initiatives",
