@@ -10,6 +10,7 @@ appropriate rule.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +26,10 @@ from impact_engine_allocate.allocation._types import AllocationRule, RuleResult
 from impact_engine_allocate.allocation.bayesian import BayesianAllocation
 from impact_engine_allocate.allocation.minimax_regret import MinimaxRegretAllocation
 
+ALLOCATE_RESULT_FILENAME = "allocate_result.json"
+
 __all__ = [
+    "ALLOCATE_RESULT_FILENAME",
     "AllocationRule",
     "BayesianAllocation",
     "MinimaxRegretAllocation",
@@ -74,11 +78,31 @@ def allocate_portfolio(
     cfg = load_config(config)
 
     initiatives = load_initiatives(data_dir, cfg["costs"])
+    init_by_id = {i["id"]: i for i in initiatives}
 
     processed = preprocess(initiatives, cfg["min_confidence_threshold"])
     if not processed:
-        return empty_rule_result("No Eligible Initiatives", cfg["rule"])
+        solver_result = empty_rule_result("No Eligible Initiatives", cfg["rule"])
+    else:
+        rule_cls = _ALLOCATION_REGISTRY[cfg["rule"]]
+        rule = rule_cls(**cfg["solver_kwargs"])
+        solver_result = rule(processed, cfg["budget"], cfg["min_portfolio_worst_return"])
 
-    rule_cls = _ALLOCATION_REGISTRY[cfg["rule"]]
-    rule = rule_cls(**cfg["solver_kwargs"])
-    return rule(processed, cfg["budget"], cfg["min_portfolio_worst_return"])
+    selected_ids = solver_result["selected_initiatives"]
+
+    allocate_result = {
+        "selected_initiatives": selected_ids,
+        "predicted_returns": {sid: init_by_id[sid]["R_med"] for sid in selected_ids},
+        "budget_allocated": {sid: init_by_id[sid]["cost"] for sid in selected_ids},
+        "solver_detail": {
+            "rule": solver_result["rule"],
+            "objective_value": solver_result["objective_value"],
+            "total_actual_returns": solver_result["total_actual_returns"],
+            "detail": solver_result["detail"],
+        },
+    }
+
+    result_path = Path(data_dir) / ALLOCATE_RESULT_FILENAME
+    result_path.write_text(json.dumps(allocate_result, indent=2) + "\n", encoding="utf-8")
+
+    return solver_result
