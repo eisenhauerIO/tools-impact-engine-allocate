@@ -9,19 +9,13 @@ def _write_json(path, data):
     path.write_text(json.dumps(data), encoding="utf-8")
 
 
-def _make_experiment_results(effect=5.0, ci_lower=3.0, ci_upper=7.0):
+def _make_measure_result(effect=5.0, ci_lower=3.0, ci_upper=7.0):
     return {
-        "model_type": "experiment",
-        "data": {
-            "impact_estimates": {
-                "params": {"treatment": effect},
-                "conf_int": {"treatment": [ci_lower, ci_upper]},
-                "pvalues": {"treatment": 0.01},
-            },
-            "model_summary": {"nobs": 1000},
-            "model_params": {"formula": "revenue ~ treatment"},
-        },
-        "metadata": {},
+        "effect_estimate": effect,
+        "ci_lower": ci_lower,
+        "ci_upper": ci_upper,
+        "p_value": 0.01,
+        "sample_size": 1000,
     }
 
 
@@ -39,7 +33,7 @@ def _setup_data_dir(tmp_path, initiatives):
     for name, conf in initiatives.items():
         d = tmp_path / name
         d.mkdir(parents=True)
-        _write_json(d / "impact_results.json", _make_experiment_results(**conf.get("impact", {})))
+        _write_json(d / "measure_result.json", _make_measure_result(**conf.get("impact", {})))
         _write_json(d / "evaluate_result.json", _make_evaluate_result(conf.get("confidence", 0.85)))
 
 
