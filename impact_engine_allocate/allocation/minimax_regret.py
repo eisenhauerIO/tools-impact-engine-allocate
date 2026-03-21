@@ -12,7 +12,7 @@ from typing import Any
 import pulp as lp
 
 from impact_engine_allocate.allocation._common import SCENARIOS, empty_rule_result, extract_selection
-from impact_engine_allocate.allocation._types import RuleResult
+from impact_engine_allocate.allocation._types import AllocationRule, RuleResult
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def _calculate_optimal_scenario_returns(
     return v_j_star
 
 
-class MinimaxRegretAllocation:
+class MinimaxRegretAllocation(AllocationRule):
     """Minimax regret decision rule.
 
     Minimizes the maximum regret across best, median, and worst-case

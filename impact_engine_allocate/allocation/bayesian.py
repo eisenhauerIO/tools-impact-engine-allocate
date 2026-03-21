@@ -11,12 +11,12 @@ from typing import Any
 import pulp as lp
 
 from impact_engine_allocate.allocation._common import SCENARIOS, empty_rule_result, extract_selection
-from impact_engine_allocate.allocation._types import RuleResult
+from impact_engine_allocate.allocation._types import AllocationRule, RuleResult
 
 logger = logging.getLogger(__name__)
 
 
-class BayesianAllocation:
+class BayesianAllocation(AllocationRule):
     """Bayesian expected-return decision rule.
 
     Maximizes the weighted sum of scenario returns, where weights represent

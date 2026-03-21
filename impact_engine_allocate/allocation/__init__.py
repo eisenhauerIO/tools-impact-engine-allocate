@@ -22,7 +22,7 @@ from impact_engine_allocate.allocation._common import (
     extract_selection,
     preprocess,
 )
-from impact_engine_allocate.allocation._types import AllocationRule, RuleResult
+from impact_engine_allocate.allocation._types import AllocationRule, RuleRegistry, RuleResult
 from impact_engine_allocate.allocation.bayesian import BayesianAllocation
 from impact_engine_allocate.allocation.minimax_regret import MinimaxRegretAllocation
 
@@ -33,7 +33,9 @@ __all__ = [
     "AllocationRule",
     "BayesianAllocation",
     "MinimaxRegretAllocation",
+    "RuleRegistry",
     "RuleResult",
+    "RULE_REGISTRY",
     "SCENARIOS",
     "allocate_portfolio",
     "calculate_effective_returns",
@@ -43,10 +45,10 @@ __all__ = [
     "preprocess",
 ]
 
-_ALLOCATION_REGISTRY: dict[str, type] = {
-    "minimax_regret": MinimaxRegretAllocation,
-    "bayesian": BayesianAllocation,
-}
+from impact_engine_allocate.allocation._types import RULE_REGISTRY  # noqa: E402
+
+RULE_REGISTRY.register("minimax_regret", MinimaxRegretAllocation)
+RULE_REGISTRY.register("bayesian", BayesianAllocation)
 
 
 def allocate_portfolio(
@@ -84,7 +86,7 @@ def allocate_portfolio(
     if not processed:
         solver_result = empty_rule_result("No Eligible Initiatives", cfg["rule"])
     else:
-        rule_cls = _ALLOCATION_REGISTRY[cfg["rule"]]
+        rule_cls = RULE_REGISTRY.get_class(cfg["rule"])
         rule = rule_cls(**cfg["solver_kwargs"])
         solver_result = rule(processed, cfg["budget"], cfg["min_portfolio_worst_return"])
 
