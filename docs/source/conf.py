@@ -20,7 +20,7 @@ source_suffix = {
     ".md": "markdown",
 }
 templates_path = ["_templates"]
-exclude_patterns = ["build"]
+exclude_patterns = ["build", "GUIDELINES.md"]
 html_theme = "sphinx_rtd_theme"
 html_theme_options = {
     "navigation_depth": 2,
@@ -41,13 +41,18 @@ nbsphinx_execute = "always"
 nbsphinx_allow_errors = False
 
 _gh_repo = "https://github.com/eisenhauerIO/tools-impact-engine-allocate"
+_colab = "https://colab.research.google.com/github/eisenhauerIO/tools-impact-engine-allocate"
 nbsphinx_prolog = rf"""
 {{% set docname = env.doc2path(env.docname, base=None) %}}
+
+.. |colab| image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: {_colab}/blob/main/docs/source/{{{{ docname }}}}
 
 .. only:: html
 
     .. nbinfo::
         Download the notebook `here <{_gh_repo}/blob/main/docs/source/{{{{ docname }}}}>`__!
+        Interactive online version: |colab|
 
 """
 
