@@ -1,22 +1,22 @@
-# Solver Algorithms
+# Solver algorithms
 
 Impact Engine Allocate provides two pluggable decision rules for portfolio selection.
 Both share a common preprocessing pipeline (confidence filtering and return
 penalization) and return the same `RuleResult` dict.
 
-## Shared Preprocessing
+## Shared preprocessing
 
-### Three-Scenario Model
+### Three-scenario model
 
 Each initiative provides return estimates under three scenarios:
 
 | Scenario | Field | Description |
 |----------|-------|-------------|
-| Best | `R_best` | Optimistic outcome |
-| Median | `R_med` | Expected outcome |
-| Worst | `R_worst` | Pessimistic outcome |
+| Best | `return_best` | Optimistic outcome |
+| Median | `return_median` | Expected outcome |
+| Worst | `return_worst` | Pessimistic outcome |
 
-### Confidence Penalty
+### Confidence penalty
 
 Initiatives with low confidence have their effective returns penalized:
 
@@ -32,19 +32,19 @@ enables better bets regardless of which rule is selected.
 
 ---
 
-## Minimax Regret
+## Minimax regret
 
 The **minimax regret** rule selects the portfolio that minimizes the maximum
 regret across all scenarios. Regret is the difference between the best
 achievable return and the actual portfolio return under each scenario.
 
-### Step 1: Optimal Scenario Returns
+### Step 1: Optimal scenario returns
 
 For each scenario $j$, solve an independent binary knapsack:
 
 $$V_j^* = \max \sum_i x_i \cdot R^{\text{eff}}_{i,j} \quad \text{s.t.} \quad \sum_i x_i \cdot \text{cost}_i \leq B$$
 
-### Step 2: Minimax Regret
+### Step 2: Minimax regret
 
 Minimize the maximum regret $\theta$ across all scenarios:
 
@@ -59,7 +59,7 @@ The `detail` dict returns `v_j_star` (optimal per-scenario returns) and
 
 ---
 
-## Bayesian Expected Return
+## Bayesian expected return
 
 The **Bayesian expected return** rule maximizes the weighted sum of scenario
 returns, where weights represent the decision-maker's prior beliefs about

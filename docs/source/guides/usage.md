@@ -110,9 +110,9 @@ The adapter translates between orchestrator and allocation field names:
 | Orchestrator Field | Allocation Field |
 |-------------------|--------------|
 | `initiative_id` | `id` |
-| `return_best` | `R_best` |
-| `return_median` | `R_med` |
-| `return_worst` | `R_worst` |
+| `return_best` | `return_best` |
+| `return_median` | `return_median` |
+| `return_worst` | `return_worst` |
 | `confidence` | `confidence` (unchanged) |
 | `cost` | `cost` (unchanged) |
 

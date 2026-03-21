@@ -1,4 +1,4 @@
-# API Reference
+# API reference
 
 ## Allocation
 
@@ -24,7 +24,7 @@
    :undoc-members:
 ```
 
-## Job Reader
+## Job reader
 
 ```{eval-rst}
 .. automodule:: impact_engine_allocate.job_reader
