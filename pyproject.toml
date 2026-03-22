@@ -27,7 +27,7 @@ packages = ["impact_engine_allocate"]
 features = ["dev", "notebooks"]
 
 [tool.hatch.envs.default.scripts]
-test = "pytest -v --nbmake {args}"
+test = "pytest"
 lint = "ruff check . && ruff format --check ."
 format = "ruff format ."
 
@@ -66,5 +66,5 @@ convention = "numpy"
 "**/tests/**" = ["D"]
 
 [tool.pytest.ini_options]
-addopts = "-v"
+addopts = "-v --nbmake"
 testpaths = ["tests", "docs/source"]
