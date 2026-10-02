@@ -108,6 +108,36 @@ def preprocess(
     return calculate_effective_returns(eligible, confidence_penalty_func)
 
 
+def solve_cbc(prob: lp.LpProblem) -> str:
+    """Solve a problem with a silent CBC solver across PuLP versions.
+
+    PuLP 4 drops the bundled ``PULP_CBC_CMD`` and drives CBC (shipped via the
+    ``cbc`` extra) through ``COIN_CMD``; ``solve`` returns ``LpSolveStats`` whose
+    status is an ``LpSolveStatus`` enum. PuLP 3.x, still resolved on Python < 3.12,
+    only finds its bundled binary and returns an integer code named by ``LpStatus``.
+
+    PuLP 4 also reports CBC's "optimal within gap tolerance" as ``GapLimit`` rather
+    than ``Optimal``, so the gap is pinned to zero to keep proven optimality.
+
+    Parameters
+    ----------
+    prob : LpProblem
+        Fully formulated problem.
+
+    Returns
+    -------
+    str
+        Solver status name, e.g. ``"Optimal"`` or ``"Infeasible"``.
+    """
+    solver = lp.COIN_CMD(msg=False, gapRel=0, gapAbs=0)
+    if not solver.available():
+        solver = lp.PULP_CBC_CMD(msg=False)
+    result = prob.solve(solver)
+    if hasattr(result, "status"):
+        return result.status.name
+    return lp.LpStatus[result]
+
+
 def extract_selection(
     x_vars: dict[str, lp.LpVariable],
     initiatives: list[dict[str, Any]],

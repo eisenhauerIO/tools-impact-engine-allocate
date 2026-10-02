@@ -79,8 +79,10 @@ The output `SolverResult` contains `selected_initiatives`, `total_cost`,
 
 ## Dependency strategy
 
-PuLP is the only required runtime dependency. It bundles the CBC solver, so no external
-solver installation is needed. Optional extras are defined in `pyproject.toml`:
+PuLP is the only required runtime dependency, installed as `pulp[cbc]>=3.3.1`. The `cbc`
+extra ships the CBC binary for PuLP 4, so no external solver installation is needed; on
+PuLP 3.x (Python < 3.12) CBC is bundled with PuLP itself. `solve_cbc()` in
+`allocation/_common.py` picks the matching solver interface and normalises the status. Optional extras are defined in `pyproject.toml`:
 
 - `dev` — pytest, nbmake, ruff, pre-commit
 - `notebooks` — jupyterlab, matplotlib, pandas, numpy

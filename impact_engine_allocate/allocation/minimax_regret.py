@@ -11,7 +11,7 @@ from typing import Any
 
 import pulp as lp
 
-from impact_engine_allocate.allocation._common import SCENARIOS, empty_rule_result, extract_selection
+from impact_engine_allocate.allocation._common import SCENARIOS, empty_rule_result, extract_selection, solve_cbc
 from impact_engine_allocate.allocation._types import AllocationRule, RuleResult
 
 logger = logging.getLogger(__name__)
@@ -43,21 +43,21 @@ def _calculate_optimal_scenario_returns(
     logger.info("Calculating optimal scenario returns (V_j_star)")
     for scenario_name in SCENARIOS:
         prob_scenario = lp.LpProblem(f"Optimal_Return_Scenario_{scenario_name}", lp.LpMaximize)
-        y = lp.LpVariable.dicts("Select", [i["id"] for i in initiatives], 0, 1, lp.LpBinary)
+        y = prob_scenario.add_variable_dicts("Select", [i["id"] for i in initiatives], 0, 1, lp.LpBinary)
         prob_scenario += lp.lpSum(y[i["id"]] * i["effective_returns"][scenario_name] for i in initiatives)
         prob_scenario += lp.lpSum(y[i["id"]] * i["cost"] for i in initiatives) <= total_budget
         try:
-            prob_scenario.solve(lp.PULP_CBC_CMD(msg=False))
+            status = solve_cbc(prob_scenario)
         except Exception:
             logger.exception("Error solving for scenario %s", scenario_name)
             v_j_star[scenario_name] = -math.inf
             continue
-        if lp.LpStatus[prob_scenario.status] == "Optimal":
+        if status == "Optimal":
             v_j_star[scenario_name] = lp.value(prob_scenario.objective)
             logger.info("Scenario '%s': V_j_star = %.2f", scenario_name, v_j_star[scenario_name])
         else:
             v_j_star[scenario_name] = -math.inf
-            logger.warning("Scenario '%s': status = %s", scenario_name, lp.LpStatus[prob_scenario.status])
+            logger.warning("Scenario '%s': status = %s", scenario_name, status)
     return v_j_star
 
 
@@ -103,8 +103,8 @@ class MinimaxRegretAllocation(AllocationRule):
 
         logger.info("Formulating minimax regret problem")
         prob = lp.LpProblem("Minimax_Regret_Investment_Portfolio", lp.LpMinimize)
-        x = lp.LpVariable.dicts("Select", [i["id"] for i in initiatives], 0, 1, lp.LpBinary)
-        theta = lp.LpVariable("Max_Regret", lowBound=0)
+        x = prob.add_variable_dicts("Select", [i["id"] for i in initiatives], 0, 1, lp.LpBinary)
+        theta = prob.add_variable("Max_Regret", lowBound=0)
         prob += theta
 
         for scenario_name in scenarios:
@@ -117,17 +117,16 @@ class MinimaxRegretAllocation(AllocationRule):
 
         logger.info("Solving the main optimization problem")
         try:
-            prob.solve(lp.PULP_CBC_CMD(msg=False))
+            status = solve_cbc(prob)
         except Exception:
             logger.exception("Error solving minimax regret problem")
             result = empty_rule_result("Error solving main problem", "minimax_regret")
             result["detail"] = {"v_j_star": v_j_star, "regrets": {}}
             return result
 
-        status = lp.LpStatus[prob.status]
-        objective_value = lp.value(prob.objective) if prob.status == lp.LpStatusOptimal else None
+        objective_value = lp.value(prob.objective) if status == "Optimal" else None
 
-        if prob.status == lp.LpStatusOptimal:
+        if status == "Optimal":
             selected, total_cost, total_actual_returns = extract_selection(x, initiatives, scenarios)
         else:
             selected, total_cost, total_actual_returns = [], 0.0, {s: 0.0 for s in scenarios}

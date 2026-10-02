@@ -12,7 +12,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "pulp",
+  "pulp[cbc]>=3.3.1",
   "pyyaml",
 ]
 
@@ -40,7 +40,7 @@ dependencies = [
   "pypandoc",
   "ipykernel",
   "nbconvert",
-  "pulp",
+  "pulp[cbc]>=3.3.1",
   "pyyaml",
   "matplotlib",
   "pandas",

@@ -10,7 +10,7 @@ from typing import Any
 
 import pulp as lp
 
-from impact_engine_allocate.allocation._common import SCENARIOS, empty_rule_result, extract_selection
+from impact_engine_allocate.allocation._common import SCENARIOS, empty_rule_result, extract_selection, solve_cbc
 from impact_engine_allocate.allocation._types import AllocationRule, RuleResult
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class BayesianAllocation(AllocationRule):
 
         logger.info("Formulating Bayesian expected-return problem")
         prob = lp.LpProblem("Bayesian_Portfolio", lp.LpMaximize)
-        x = lp.LpVariable.dicts("Select", [i["id"] for i in initiatives], 0, 1, lp.LpBinary)
+        x = prob.add_variable_dicts("Select", [i["id"] for i in initiatives], 0, 1, lp.LpBinary)
 
         prob += lp.lpSum(x[i["id"]] * weighted_returns[i["id"]] for i in initiatives)
         prob += lp.lpSum(x[i["id"]] * i["cost"] for i in initiatives) <= total_budget
@@ -82,15 +82,14 @@ class BayesianAllocation(AllocationRule):
 
         logger.info("Solving the Bayesian optimization problem")
         try:
-            prob.solve(lp.PULP_CBC_CMD(msg=False))
+            status = solve_cbc(prob)
         except Exception:
             logger.exception("Error solving Bayesian problem")
             return empty_rule_result("Error solving main problem", "bayesian", scenarios)
 
-        status = lp.LpStatus[prob.status]
-        objective_value = lp.value(prob.objective) if prob.status == lp.LpStatusOptimal else None
+        objective_value = lp.value(prob.objective) if status == "Optimal" else None
 
-        if prob.status == lp.LpStatusOptimal:
+        if status == "Optimal":
             selected, total_cost, total_actual_returns = extract_selection(x, initiatives, scenarios)
         else:
             selected, total_cost, total_actual_returns = [], 0.0, {s: 0.0 for s in scenarios}
